@@ -1,67 +1,68 @@
-import { Download, Plus, UserPlus } from 'lucide-react';
-import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import { PageHeader } from '@/components/layout/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader } from '@/components/ui/card';
-import { Agents } from '@/data/agents';
-import { AlertsPanel } from '@/features/dashboard/components/alerts-panel';
-import { AumOverview } from '@/features/dashboard/components/aum-overview';
-import { FlaggedInvestors } from '@/features/dashboard/components/flagged-investors';
-import { KpiRow } from '@/features/dashboard/components/kpi-row';
-import { PortfolioBuckets } from '@/features/dashboard/components/portfolio-buckets';
-import { AgentsTable } from '@/features/agents/components/agents-table';
+import { NoAccess } from '@/components/ui/no-access';
+import { AttentionPanel } from '@/features/dashboard/components/attention-panel';
+import { JourneyStages } from '@/features/dashboard/components/journey-stages';
+import { KycBreakdown } from '@/features/dashboard/components/kyc-breakdown';
+import { OnboardingFunnel } from '@/features/dashboard/components/onboarding-funnel';
+import { SignupTrend } from '@/features/dashboard/components/signup-trend';
+import { SummaryKpis } from '@/features/dashboard/components/summary-kpis';
+import { getDashboardSummary, getSignupSeries } from '@/lib/api/admin';
+import { hasPermission } from '@/lib/auth/session';
+import { formatDateTime } from '@/utils/format';
 
-export default function DashboardPage(): React.JSX.Element {
-  const topAgents = [...Agents].sort((a, b) => b.aum - a.aum).slice(0, 5);
+export const metadata: Metadata = { title: 'Dashboard · RiSips Admin' };
+
+/** Twelve weeks back from today, as the API's India-local dates. */
+function trendRange(): { from: string; to: string } {
+  const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const to = istNow.toISOString().slice(0, 10);
+  const from = new Date(istNow.getTime() - 83 * 86_400_000).toISOString().slice(0, 10);
+  return { from, to };
+}
+
+export default async function DashboardPage(): Promise<React.JSX.Element> {
+  if (!(await hasPermission('dashboard.read'))) {
+    return (
+      <>
+        <PageHeader title="Dashboard" />
+        <NoAccess what="dashboard metrics" />
+      </>
+    );
+  }
+
+  const [summary, series] = await Promise.all([
+    getDashboardSummary(),
+    getSignupSeries({ ...trendRange(), bucket: 'week' }),
+  ]);
 
   return (
     <>
       <PageHeader
         title="Dashboard"
-        description="SIP flows, agents and investors, and the compliance queue in one view."
-        actions={
-          <>
-            <Button icon={<Download className="size-4" />}>Export</Button>
-            <Button icon={<UserPlus className="size-4" />}>Add agent</Button>
-            <Link
-              href="/model-portfolios/new"
-              className="inline-flex h-9.5 items-center gap-2 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep"
-            >
-              <Plus className="size-4" />
-              New model portfolio
-            </Link>
-          </>
+        description={
+          summary.dataAsOf
+            ? `Signups, KYC and investments across every investor. Investor figures as of ${formatDateTime(summary.dataAsOf)}; they refresh every minute.`
+            : 'Investor figures are being prepared for the first time. Refresh in a minute.'
         }
       />
 
-      <KpiRow />
+      <SummaryKpis summary={summary} />
 
       <div className="mt-6 space-y-4">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
-            <AumOverview />
+            <SignupTrend series={series} />
           </div>
-          <AlertsPanel />
+          <AttentionPanel attention={summary.attention} />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <PortfolioBuckets />
-          <FlaggedInvestors />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <OnboardingFunnel funnel={summary.funnel} />
+          <KycBreakdown kyc={summary.kyc} />
+          <JourneyStages summary={summary} />
         </div>
-
-        <Card>
-          <CardHeader
-            title="Agents"
-            subtitle="Ranked by book size. Location drives phase-02 goal-mapping visits."
-            action={
-              <Link href="/agents" className="text-[13px] font-medium text-brand hover:text-brand-deep">
-                Manage agents
-              </Link>
-            }
-          />
-          <AgentsTable agents={topAgents} />
-        </Card>
       </div>
     </>
   );

@@ -1,71 +1,95 @@
-import { ArrowLeft, Mail, MapPin, Phone, Send, UserRoundCog } from 'lucide-react';
+import { ArrowLeft, LifeBuoy } from 'lucide-react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/page-header';
-import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardBody, CardHeader } from '@/components/ui/card';
+import { NoAccess } from '@/components/ui/no-access';
+import { SectionTabs } from '@/components/ui/section-tabs';
 import { StatStrip } from '@/components/ui/stat-strip';
-import { ReviewMeetings } from '@/data/compliance';
-import { InvestorDetails } from '@/data/investor-details';
-import { Investors } from '@/data/investors';
-import { CompliancePanel } from '@/features/investors/components/compliance-panel';
-import { HoldingsPanel } from '@/features/investors/components/holdings-panel';
-import { InvestorBuckets } from '@/features/investors/components/investor-buckets';
-import { InvestorTabs } from '@/features/investors/components/investor-tabs';
-import { MeetingsPanel } from '@/features/investors/components/meetings-panel';
-import { ProfileAssignment } from '@/features/investors/components/profile-assignment';
-import { TransactionsPanel } from '@/features/investors/components/transactions-panel';
-import { WealthProfileForm } from '@/features/investors/components/wealth-profile-form';
-import { holdingsFor } from '@/features/investors/investor-holdings';
-import { formatDate, formatInr, formatPercent } from '@/utils/format';
-import { KycTone, SipTone } from '@/utils/tone';
+import { AccountsPanel } from '@/features/investors/components/detail/accounts-panel';
+import { ContactCard } from '@/features/investors/components/detail/contact-card';
+import { HoldingsPanel } from '@/features/investors/components/detail/holdings-panel';
+import { ItemPanelProvider } from '@/features/investors/components/item-panel/item-panel';
+import { KycPanel } from '@/features/investors/components/detail/kyc-panel';
+import { OrdersPanel } from '@/features/investors/components/detail/orders-panel';
+import { OverviewPanel } from '@/features/investors/components/detail/overview-panel';
+import { PaymentsPanel } from '@/features/investors/components/detail/payments-panel';
+import { PlansPanel } from '@/features/investors/components/detail/plans-panel';
+import { TimelinePanel } from '@/features/investors/components/detail/timeline-panel';
+import { KycLabel, NextStepLabel, StageLabel } from '@/features/investors/labels';
+import { isLivePlan } from '@/features/investors/money-labels';
+import { getInvestor } from '@/lib/api/admin';
+import { ApiError } from '@/lib/api/errors';
+import { hasPermission } from '@/lib/auth/session';
+import type { InvestorDetail } from '@/types/admin-api.types';
+import { formatCount, formatDate, formatInrString, timeAgo } from '@/utils/format';
+import { JourneyStageTone, KycStatusTone } from '@/utils/tone';
 
-export function generateStaticParams(): { id: string }[] {
-  return Investors.map((investor) => ({ id: investor.id }));
-}
+export const metadata: Metadata = { title: 'Investor · RiSips Admin' };
 
 type InvestorPageProps = {
   params: Promise<{ id: string }>;
 };
 
 export default async function InvestorPage({ params }: InvestorPageProps): Promise<React.JSX.Element> {
+  if (!(await hasPermission('investors.read'))) {
+    return (
+      <>
+        <PageHeader title="Investor" />
+        <NoAccess what="investor records" />
+      </>
+    );
+  }
+
   const { id } = await params;
-  const investor = Investors.find((entry) => entry.id === id);
-  const detail = investor ? InvestorDetails[investor.id] : undefined;
+  let detail: InvestorDetail;
+  try {
+    detail = await getInvestor(id);
+  } catch (error) {
+    if (error instanceof ApiError && error.isNotFound) notFound();
+    throw error;
+  }
 
-  if (!investor || !detail) notFound();
-
-  const meetings = ReviewMeetings.filter((meeting) => meeting.investorId === investor.id);
-  const holdings = holdingsFor(investor, detail);
-  const gain = investor.aum - detail.invested;
-  const openDocuments = detail.documents.filter((document) => document.status !== 'Verified').length;
+  const { summary, investments } = detail;
+  const canRaiseTicket = await hasPermission('support.manage');
+  const { portfolio, plans, summary: money } = investments;
+  const gain = Number(portfolio.gain);
+  const livePlans = [...plans.sips, ...plans.swps, ...plans.stps].filter((plan) => isLivePlan(plan.state)).length;
+  const kycCaption = summary.kycNextStep
+    ? NextStepLabel[summary.kycNextStep]
+    : summary.kycCompletedVia === 'KRA'
+      ? 'Verified at the KRA'
+      : summary.kycCompletedVia === 'KYC_FORM'
+        ? 'Via our digital KYC form'
+        : undefined;
 
   return (
     <>
-      <Link
-        href="/investors"
-        className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink"
-      >
+      <Link href="/investors" className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
         Investors
       </Link>
 
       <PageHeader
-        title={investor.name}
-        description={`${investor.city} · Onboarded ${formatDate(investor.joinedAt)} · Serviced by ${investor.agentName}`}
+        title={summary.name ?? 'Unnamed investor'}
+        description={`Signed up ${formatDate(summary.signedUpAt)} · Last active ${timeAgo(summary.lastActivityAt)}`}
         actions={
           <>
-            <Badge tone={KycTone[investor.kycStatus]}>{investor.kycStatus}</Badge>
-            <Badge tone={SipTone[investor.sipHealth]} dot>
-              {investor.sipHealth}
+            <Badge tone={JourneyStageTone[summary.stage]} dot>
+              {StageLabel[summary.stage]}
             </Badge>
-            <Button icon={<Send className="size-4" />}>Message</Button>
-            <Button variant="primary" icon={<UserRoundCog className="size-4" />}>
-              Edit investor
-            </Button>
+            <Badge tone={KycStatusTone[summary.kycStatus]}>KYC: {KycLabel[summary.kycStatus]}</Badge>
+            {canRaiseTicket ? (
+              <Link
+                href={`/support/new?${new URLSearchParams({ investor: summary.id, name: summary.name ?? '' }).toString()}`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink transition-colors hover:bg-surface-sunken"
+              >
+                <LifeBuoy className="size-4" />
+                Raise ticket
+              </Link>
+            ) : null}
           </>
         }
       />
@@ -73,133 +97,72 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
       <StatStrip
         className="mb-5"
         items={[
-          { label: 'Portfolio value', value: formatInr(investor.aum), caption: 'across all folios' },
-          { label: 'Invested', value: formatInr(detail.invested), caption: 'cost basis' },
           {
-            label: 'Unrealised gain',
-            value: `${gain >= 0 ? '+' : ''}${formatInr(gain)}`,
-            caption: `${formatPercent((gain / detail.invested) * 100, 1)} absolute`,
+            label: 'Current value',
+            hint: 'From the latest RTA holdings report.',
+            value: formatInrString(portfolio.currentValue),
+            caption: portfolio.asOf ? `as of ${formatDate(portfolio.asOf)}` : 'nothing allotted yet',
           },
-          { label: 'XIRR', hint: 'Annualised, net of expenses.', value: formatPercent(detail.xirr, 1) },
           {
-            label: 'Monthly SIP',
-            value: formatInr(investor.monthlySip, { compact: false }),
-            caption: `debits on the ${detail.mandate.sipDate}`,
+            label: 'Invested',
+            value: formatInrString(portfolio.investedValue),
+            caption:
+              Number(portfolio.investedValue) > 0
+                ? `${gain >= 0 ? '+' : '−'}${formatInrString(String(Math.abs(gain)))} (${portfolio.gainPercent ?? '0.00'}%)`
+                : 'cost of units held',
           },
-          { label: 'Folios', value: String(detail.folios.length), caption: detail.pan },
+          {
+            label: 'Active SIPs',
+            value: formatCount(money.activeSips),
+            caption: `${formatInrString(money.sipMonthlyAmount, { compact: false })} a month`,
+          },
+          {
+            label: 'Next SIP',
+            value: money.nextSip ? formatDate(money.nextSip.date) : '—',
+            caption: money.nextSip
+              ? `${formatInrString(money.nextSip.amount, { compact: false })}${money.nextSip.count > 1 ? ` across ${money.nextSip.count} SIPs` : ''}`
+              : 'none scheduled',
+          },
+          {
+            label: 'SWP · STP',
+            value: `${formatCount(money.activeSwps)} · ${formatCount(money.activeStps)}`,
+            caption: 'active withdrawal · transfer plans',
+          },
+          { label: 'KYC', value: KycLabel[summary.kycStatus], ...(kycCaption && { caption: kycCaption }) },
         ]}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <InvestorTabs
+      {/* grid-cols-1 is minmax(0,1fr): without it the column grows to the tables' min width and the page scrolls sideways. */}
+      <ItemPanelProvider userId={summary.id}>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <SectionTabs
           tabs={[
-            {
-              label: 'Profile',
-              content: (
-                <div className="space-y-4">
-                  <ProfileAssignment
-                    currentProfileName={investor.portfolioName}
-                    currentRisk={investor.riskProfile}
-                  />
-                  <WealthProfileForm initial={investor.wealthProfile} />
-                </div>
-              ),
-            },
+            { label: 'Overview', content: <OverviewPanel investments={investments} /> },
             {
               label: 'Holdings',
-              count: holdings.length,
-              content: <HoldingsPanel holdings={holdings} portfolioName={investor.portfolioName} />,
+              count: portfolio.holdings.length || undefined,
+              content: <HoldingsPanel investments={investments} />,
             },
+            { label: 'SIP · SWP · STP', count: livePlans || undefined, content: <PlansPanel plans={plans} /> },
+            { label: 'Orders', count: investments.orders.length || undefined, content: <OrdersPanel orders={investments.orders} /> },
             {
-              label: 'Transactions',
-              count: detail.transactions.length,
-              content: <TransactionsPanel transactions={detail.transactions} />,
+              label: 'Payments',
+              count: investments.payments.length || undefined,
+              content: <PaymentsPanel payments={investments.payments} />,
             },
+            { label: 'KYC', count: detail.kyc.forms.length || undefined, content: <KycPanel kyc={detail.kyc} /> },
             {
-              label: 'KYC & mandate',
-              count: openDocuments > 0 ? openDocuments : undefined,
-              content: <CompliancePanel detail={detail} />,
+              label: 'Bank & nominees',
+              count: detail.bankAccounts.length || undefined,
+              content: <AccountsPanel bankAccounts={detail.bankAccounts} nomination={detail.nomination} mandates={detail.mandates} />,
             },
-            {
-              label: 'Meetings',
-              count: meetings.length,
-              content: <MeetingsPanel meetings={meetings} />,
-            },
+            { label: 'Timeline', content: <TimelinePanel timeline={detail.timeline} /> },
           ]}
         />
 
-        <div className="space-y-4">
-          <Card>
-            <CardBody className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Avatar name={investor.name} tone="violet" className="size-11 text-[14px]" />
-                <div className="min-w-0">
-                  <p className="truncate text-[14.5px] font-semibold text-ink">{investor.name}</p>
-                  <p className="text-[12.5px] text-ink-muted">
-                    {investor.riskProfile} · {investor.portfolioName}
-                  </p>
-                </div>
-              </div>
-
-              <ul className="space-y-2 border-t border-line pt-3.5">
-                <li className="flex items-center gap-2 text-[13px] text-ink-soft">
-                  <Mail className="size-3.5 shrink-0 text-ink-muted" />
-                  <span className="truncate">{investor.email}</span>
-                </li>
-                <li className="flex items-center gap-2 text-[13px] text-ink-soft">
-                  <Phone className="size-3.5 shrink-0 text-ink-muted" />
-                  {investor.phone}
-                </li>
-                <li className="flex items-center gap-2 text-[13px] text-ink-soft">
-                  <MapPin className="size-3.5 shrink-0 text-ink-muted" />
-                  {investor.city}
-                </li>
-              </ul>
-
-              <dl className="space-y-2 border-t border-line pt-3.5">
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[12.5px] text-ink-muted">PAN</dt>
-                  <dd className="tabular text-[13px] font-medium text-ink">{detail.pan}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[12.5px] text-ink-muted">Folios</dt>
-                  <dd className="tabular text-right text-[13px] font-medium text-ink">
-                    {detail.folios.map((folio) => (
-                      <span key={folio} className="block">
-                        {folio}
-                      </span>
-                    ))}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[12.5px] text-ink-muted">Bank</dt>
-                  <dd className="text-right text-[13px] font-medium text-ink">
-                    {detail.bank.bank}
-                    <span className="tabular block text-[11.5px] font-normal text-ink-muted">
-                      {detail.bank.accountMasked}
-                    </span>
-                  </dd>
-                </div>
-              </dl>
-            </CardBody>
-          </Card>
-
-          <InvestorBuckets investor={investor} />
-
-          <Card>
-            <CardHeader title="Servicing agent" subtitle="Point of contact for this investor" />
-            <CardBody className="flex items-center gap-3">
-              <Avatar name={investor.agentName} />
-              <div className="min-w-0">
-                <p className="truncate text-[13.5px] font-semibold text-ink">{investor.agentName}</p>
-                <Link href="/agents" className="text-[12.5px] text-brand hover:text-brand-deep">
-                  View agent
-                </Link>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+        <ContactCard detail={detail} />
       </div>
+      </ItemPanelProvider>
     </>
   );
 }

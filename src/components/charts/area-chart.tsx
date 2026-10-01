@@ -17,7 +17,8 @@ export function AreaChart({
   height = 220,
   valueFormatter,
 }: AreaChartProps): React.JSX.Element {
-  const max = Math.max(...data.map((point) => point.value)) * 1.15;
+  // Floor of 1 keeps an all-zero series on the baseline instead of dividing by zero.
+  const max = Math.max(1, ...data.map((point) => point.value)) * 1.15;
   const min = 0;
   const stepX = (Width - PaddingX * 2) / Math.max(1, data.length - 1);
   const plotHeight = height - 34;

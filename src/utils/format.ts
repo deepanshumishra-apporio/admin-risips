@@ -40,3 +40,39 @@ export function initialsOf(name: string): string {
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
 }
+
+/** API money arrives as a decimal string (never a float on the wire). */
+export function formatInrString(amount: string | null | undefined, opts?: { compact?: boolean }): string {
+  if (amount === null || amount === undefined) return '—';
+  const value = Number(amount);
+  return Number.isFinite(value) ? formatInr(value, opts) : '—';
+}
+
+/** Date and time in India, for audit-style timestamps. */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  });
+}
+
+/** "3h ago" against the real clock (unlike `relativeTime`, which is pinned for mock data). */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const minutes = Math.round((now - Date.parse(iso)) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60 * 24) return `${Math.round(minutes / 60)}h ago`;
+  const days = Math.round(minutes / (60 * 24));
+  return days < 60 ? `${days}d ago` : formatDate(iso);
+}
+
+/** SCREAMING_SNAKE or snake_case from the API → "Sentence case". */
+export function humanize(value: string | null | undefined): string {
+  if (!value) return '—';
+  const text = value.toLowerCase().replaceAll('_', ' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

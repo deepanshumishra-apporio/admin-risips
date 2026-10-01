@@ -1,30 +1,21 @@
-import { Download, UserPlus } from 'lucide-react';
+import { UsersRound } from 'lucide-react';
+import type { Metadata } from 'next';
 
-import { PageHeader } from '@/components/layout/page-header';
-import { Button } from '@/components/ui/button';
-import { PageTabs } from '@/components/ui/page-tabs';
-import { AgentsDirectory } from '@/features/agents/components/agents-directory';
-import { TeamTabs } from '@/features/agents/team-tabs';
+import { ComingSoon } from '@/components/ui/coming-soon';
+
+export const metadata: Metadata = { title: 'Agents · RiSips Admin' };
 
 export default function AgentsPage(): React.JSX.Element {
   return (
-    <>
-      <PageTabs tabs={TeamTabs} />
-
-      <PageHeader
-        title="Agents"
-        description="Sub-brokers on the platform, their book size and the compliance flags against them."
-        actions={
-          <>
-            <Button icon={<Download className="size-4" />}>Export</Button>
-            <Button variant="primary" icon={<UserPlus className="size-4" />}>
-              Add agent
-            </Button>
-          </>
-        }
-      />
-
-      <AgentsDirectory />
-    </>
+    <ComingSoon
+      title="Agents"
+      icon={UsersRound}
+      summary="Sub-brokers and ARN holders who bring in and service investors. There are no agents on the platform yet, so there is nothing to show."
+      planned={[
+        'A directory of agents with their ARN, EUIN and licence expiry',
+        'The investors and assets each agent services',
+        'Alerts for licences about to lapse',
+      ]}
+    />
   );
 }
