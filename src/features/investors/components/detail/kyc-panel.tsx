@@ -36,7 +36,7 @@ export function KycPanel({ kyc }: { kyc: InvestorDetail['kyc'] }): React.JSX.Ele
       <Card>
         <CardHeader
           title="PAN check"
-          subtitle={panCheck ? `Latest verdict · ${formatDateTime(panCheck.at)}` : 'Not run yet'}
+          subtitle={panCheck ? formatDateTime(panCheck.at) : undefined}
           action={
             panCheck ? (
               <Badge tone={panCheck.readinessStatus === 'verified' ? 'success' : 'danger'}>
@@ -60,13 +60,13 @@ export function KycPanel({ kyc }: { kyc: InvestorDetail['kyc'] }): React.JSX.Ele
           </CardBody>
         ) : (
           <CardBody>
-            <p className="text-[13px] text-ink-muted">The investor hasn&apos;t entered their PAN yet.</p>
+            <p className="text-[13px] text-ink-muted">No PAN entered yet.</p>
           </CardBody>
         )}
       </Card>
 
       <Card>
-        <CardHeader title="Digital KYC forms" subtitle="Only needed when the PAN isn't already KYC-compliant at the KRA" />
+        <CardHeader title="Digital KYC forms" />
         {forms.length === 0 ? (
           <CardBody>
             <p className="text-[13px] text-ink-muted">No KYC form has been opened.</p>

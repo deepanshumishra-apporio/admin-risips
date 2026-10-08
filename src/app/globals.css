@@ -25,10 +25,6 @@
   --color-navy: #020b1b;
   --color-navy-soft: #0d1b30;
 
-  /* The mark's point. The brand sheet's two greens: the darker one is for
-     paper, the lighter one for wherever the ground is dark. */
-  --color-mark-point: #1b6b4a;
-  --color-mark-point-inverse: #2eb77f;
 
   --color-success: #12a150;
   --color-success-soft: #e7f7ee;

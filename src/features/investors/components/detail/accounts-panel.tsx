@@ -14,7 +14,7 @@ export function AccountsPanel({ bankAccounts, nomination, mandates }: AccountsPa
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader title="Bank accounts" subtitle="Account numbers show the last four digits only" />
+        <CardHeader title="Bank accounts" />
         {bankAccounts.length === 0 ? (
           <CardBody>
             <p className="text-[13px] text-ink-muted">No bank account added yet.</p>
@@ -63,14 +63,14 @@ export function AccountsPanel({ bankAccounts, nomination, mandates }: AccountsPa
             </ul>
           ) : (
             <p className="text-[13px] text-ink-muted">
-              {nomination.optedOut ? 'The investor declared they will not nominate.' : 'Not answered yet.'}
+              {nomination.optedOut ? 'Opted out of nomination.' : 'Not answered yet.'}
             </p>
           )}
         </CardBody>
       </Card>
 
       <Card>
-        <CardHeader title="Mandates" subtitle="Auto-debit authorisations for SIPs" />
+        <CardHeader title="Mandates" />
         {mandates.length === 0 ? (
           <CardBody>
             <p className="text-[13px] text-ink-muted">No mandate set up.</p>

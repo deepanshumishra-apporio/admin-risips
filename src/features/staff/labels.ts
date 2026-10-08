@@ -9,8 +9,20 @@ export const PermissionLabel: Record<Permission, string> = {
   'support.manage': 'Support tickets and live chat',
   'compliance.manage': 'Compliance alerts',
   'announcements.manage': 'Announcements',
+  'portfolios.manage': 'Model portfolios',
+  'meetings.manage': 'Review meetings',
   'staff.manage': 'Manage staff',
+  'roles.manage': 'Role Manager',
 };
+
+/** How the role editor groups permissions, mirroring the portal's menu. */
+export const PermissionGroups: { title: string; permissions: Permission[] }[] = [
+  { title: 'Observe', permissions: ['dashboard.read', 'transactions.read', 'compliance.manage', 'reports.read'] },
+  { title: 'Investors', permissions: ['investors.read'] },
+  { title: 'Advisory', permissions: ['portfolios.manage', 'meetings.manage'] },
+  { title: 'Engagement & support', permissions: ['announcements.manage', 'support.manage'] },
+  { title: 'Administration', permissions: ['staff.manage', 'roles.manage'] },
+];
 
 export const StaffStatusLabel: Record<StaffStatus, string> = {
   ACTIVE: 'Active',

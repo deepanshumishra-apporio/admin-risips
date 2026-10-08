@@ -1,11 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 166">
-  <path
-    d="M14 106 L14 14 L152 14 L152 152 L64 152 L64 64"
-    fill="none"
-    stroke="#0a71da"
-    stroke-width="28"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
-  <circle cx="14" cy="152" r="14" fill="#1b6b4a" />
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 166"><path d="M0 106V6A6 6 0 0 1 6 0H160A6 6 0 0 1 166 6V160A6 6 0 0 1 160 166H56A6 6 0 0 1 50 160V64A14 14 0 0 1 78 64V138H138V28H28V106A14 14 0 0 1 0 106Z" fill="#0160C2"/><circle cx="14" cy="152" r="14" fill="#F2B84B"/></svg>

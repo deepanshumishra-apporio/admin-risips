@@ -5,11 +5,14 @@ import { Card, CardBody } from '@/components/ui/card';
 import type { InvestorDetail } from '@/types/admin-api.types';
 import { formatDate, humanize } from '@/utils/format';
 
-function Row({ label, value }: { label: string; value: string | null }): React.JSX.Element {
+function Row({ label, value }: { label: string; value: string | null }): React.JSX.Element | null {
+  if (!value) return null;
   return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-[12.5px] text-ink-muted">{label}</dt>
-      <dd className="text-right text-[13px] font-medium text-ink">{value ?? '—'}</dd>
+    <div className="min-w-0">
+      <dt className="text-[11.5px] text-ink-muted">{label}</dt>
+      <dd className="mt-0.5 truncate text-[13px] font-medium text-ink" title={value}>
+        {value}
+      </dd>
     </div>
   );
 }
@@ -49,7 +52,7 @@ export function ContactCard({ detail }: { detail: InvestorDetail }): React.JSX.E
           ) : null}
         </ul>
 
-        <dl className="space-y-2 border-t border-line pt-3.5">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3.5">
           <Row label="PAN" value={summary.pan} />
           <Row label="Date of birth" value={profile?.dateOfBirth ? formatDate(profile.dateOfBirth) : null} />
           <Row label="Gender" value={profile?.gender ? humanize(profile.gender) : null} />

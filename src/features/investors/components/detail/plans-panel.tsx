@@ -5,8 +5,8 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Table, Td } from '@/components/ui/table';
 import { ItemRow } from '@/features/investors/components/item-panel/item-panel';
-import { PlanKindDescription, PlanKindLabel, isLivePlan, stateTone } from '@/features/investors/money-labels';
-import type { InvestorInvestments, InvestorItemType, Plan, PlanKind } from '@/types/admin-api.types';
+import { PlanKindLabel, isLivePlan, stateTone } from '@/features/investors/money-labels';
+import type { InvestorItemType, Plan, PlanKind } from '@/types/admin-api.types';
 
 const PlanItemType: Record<PlanKind, InvestorItemType> = { SIP: 'sip', SWP: 'swp', STP: 'stp' };
 import { formatDate, formatInrString, humanize } from '@/utils/format';
@@ -20,7 +20,7 @@ function Schedule({ plan }: { plan: Plan }): React.JSX.Element {
   return (
     <>
       {humanize(plan.frequency)}
-      {plan.installmentDay ? <span className="block text-[11.5px] text-ink-muted">on the {ordinal(plan.installmentDay)}</span> : null}
+      {plan.installmentDay ? <span className="text-ink-muted"> · {ordinal(plan.installmentDay)}</span> : null}
     </>
   );
 }
@@ -35,7 +35,7 @@ function Progress({ plan }: { plan: Plan }): React.JSX.Element {
         {done} of {plan.totalInstallments}
       </span>
       <ProgressBar value={pct} className="mt-1" />
-      {failed > 0 ? <span className="mt-0.5 block text-[11.5px] text-ink-muted">{failed} not successful</span> : null}
+      {failed > 0 ? <span className="mt-0.5 block text-[11.5px] text-danger">{failed} failed</span> : null}
     </div>
   );
 }
@@ -45,7 +45,10 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
 
   return (
     <Card>
-      <CardHeader title={`${PlanKindLabel[kind]}s`} subtitle={`${PlanKindDescription[kind]} · ${live} live of ${plans.length}`} />
+      <CardHeader
+        title={`${PlanKindLabel[kind]}s`}
+        action={plans.length ? <Badge tone={live ? 'success' : 'neutral'}>{live} live of {plans.length}</Badge> : null}
+      />
       {plans.length === 0 ? (
         <CardBody>
           <p className="text-[13px] text-ink-muted">None set up.</p>
@@ -67,7 +70,6 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
               <Td>
                 <span className="block font-medium text-ink">{plan.scheme}</span>
                 {plan.toScheme ? <span className="block text-[12px] text-ink-muted">→ {plan.toScheme}</span> : null}
-                {plan.folioNumber ? <span className="tabular block text-[11.5px] text-ink-muted">Folio {plan.folioNumber}</span> : null}
               </Td>
               <Td className="tabular font-semibold text-ink">
                 {plan.amount ? formatInrString(plan.amount, { compact: false }) : plan.units ? `${plan.units} units` : '—'}
@@ -77,9 +79,6 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
               </Td>
               <Td className="text-[13px]">
                 {plan.nextInstallmentDate && isLivePlan(plan.state) ? formatDate(plan.nextInstallmentDate) : '—'}
-                {plan.previousInstallmentDate ? (
-                  <span className="block text-[11.5px] text-ink-muted">last {formatDate(plan.previousInstallmentDate)}</span>
-                ) : null}
               </Td>
               <Td>
                 <Progress plan={plan} />
@@ -87,17 +86,14 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
               <Td className="text-[13px]">
                 {kind === 'SIP' ? (
                   plan.mandate ? (
-                    <>
-                      <Badge tone={stateTone(plan.mandate.status)}>{humanize(plan.mandate.status)}</Badge>
-                      <span className="mt-1 block text-[11.5px] text-ink-muted">{humanize(plan.mandate.type)}</span>
-                    </>
+                    <Badge tone={stateTone(plan.mandate.status)}>{humanize(plan.mandate.status)}</Badge>
                   ) : (
                     <span className="text-ink-muted">None linked</span>
                   )
                 ) : (
                   <>
                     {plan.startDate ? formatDate(plan.startDate) : '—'}
-                    {plan.endDate ? <span className="block text-[11.5px] text-ink-muted">to {formatDate(plan.endDate)}</span> : null}
+                    {plan.endDate ? <span className="text-ink-muted"> – {formatDate(plan.endDate)}</span> : null}
                   </>
                 )}
               </Td>
@@ -110,10 +106,6 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
                     {plan.pause.to ? ` – ${formatDate(plan.pause.to)}` : ''}
                   </span>
                 ) : null}
-                {plan.cancelledAt ? (
-                  <span className="mt-1 block text-[11.5px] text-ink-muted">Cancelled {formatDate(plan.cancelledAt)}</span>
-                ) : null}
-                {plan.reason ? <span className="mt-1 block max-w-[200px] text-[11.5px] text-ink-muted">{humanize(plan.reason)}</span> : null}
               </Td>
             </ItemRow>
           ))}
@@ -123,12 +115,7 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
   );
 }
 
-export function PlansPanel({ plans }: { plans: InvestorInvestments['plans'] }): React.JSX.Element {
-  return (
-    <div className="space-y-4">
-      <PlanTable kind="SIP" plans={plans.sips} />
-      <PlanTable kind="SWP" plans={plans.swps} />
-      <PlanTable kind="STP" plans={plans.stps} />
-    </div>
-  );
+/** One kind of plan at a time: each has its own pill on the Investments tab, so none sits below a long list. */
+export function PlansPanel({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JSX.Element {
+  return <PlanTable kind={kind} plans={plans} />;
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { AccountMenu, type Account } from '@/components/layout/account-menu';
-import { BrandMark } from '@/components/layout/brand-mark';
+import { BrandLogo, BrandMark } from '@/components/layout/brand-mark';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { useSidebar } from '@/components/layout/sidebar-state';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
@@ -23,15 +23,9 @@ export function Topbar({ account }: { account: Account }): React.JSX.Element {
           collapsed ? 'justify-center px-2' : 'px-3',
         )}
       >
-        <Link href="/" aria-label="RiSips admin home">
-          <BrandMark size={28} />
+        <Link href="/" aria-label="RiSips admin home" className="flex items-center px-1">
+          {collapsed ? <BrandMark size={28} /> : <BrandLogo height={26} />}
         </Link>
-
-        {collapsed ? null : (
-          <Link href="/" className="min-w-0 flex-1 truncate px-1 text-[13.5px] font-semibold text-ink">
-            RiSips
-          </Link>
-        )}
       </div>
 
       <div className="flex min-w-0 flex-1 items-center gap-4 px-5">

@@ -1,77 +1,83 @@
+import {
+  Lockup,
+  LogoColors,
+  MarkPath,
+  MarkPoint,
+  MarkViewBox,
+  WordmarkAspectRatio,
+  WordmarkBodyPath,
+  WordmarkDotsPath,
+  WordmarkViewBox,
+} from '@/components/layout/logo-geometry';
 import { cn } from '@/utils/cn';
 
 /**
- * The mark, taken from the mobile app's construction figures rather than
- * redrawn (see mobile-app/src/components/brand-mark.tsx).
+ * The RiSips logo, drawn from the brand sheet's data (`logo-geometry.ts`,
+ * shared with the mobile app and the website) rather than redrawn here.
  *
- * One unbroken stroke that turns four times, folds inward, and stops — it never
- * closes. The point sits in the corner the line left open, exactly on the left
- * and bottom axes. Everything derives from the stroke width, so the only
- * correct way to resize it is to scale the vector.
+ * Two tones only, as on the sheet: blue on paper, and white on blue. The point
+ * and the i-dots stay yellow on both.
  */
-const MarkGeometry = {
-  size: 166,
-  path: 'M14 106 L14 14 L152 14 L152 152 L64 152 L64 64',
-  strokeWidth: 28,
-  point: { x: 14, y: 152, radius: 14 },
-} as const;
-
-/** Ink on paper, or paper on ink — those are the two. */
 type MarkTone = 'brand' | 'inverse';
 
-const ToneColors: Record<MarkTone, { stroke: string; point: string }> = {
-  brand: { stroke: 'var(--color-brand)', point: 'var(--color-mark-point)' },
-  inverse: { stroke: '#ffffff', point: 'var(--color-mark-point-inverse)' },
-};
+const Ink: Record<MarkTone, string> = { brand: LogoColors.blue, inverse: '#ffffff' };
 
-type BrandMarkProps = {
-  size?: number;
-  tone?: MarkTone;
-  className?: string;
-};
-
-export function BrandMark({ size = 28, tone = 'brand', className }: BrandMarkProps): React.JSX.Element {
-  const colors = ToneColors[tone];
-
+/** The square mark alone — favicons, the collapsed rail, small places. */
+export function BrandMark({ size = 28, tone = 'brand', className }: { size?: number; tone?: MarkTone; className?: string }): React.JSX.Element {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${MarkGeometry.size} ${MarkGeometry.size}`}
-      className={cn('shrink-0', className)}
-      aria-hidden="true"
-    >
-      <path
-        d={MarkGeometry.path}
-        stroke={colors.stroke}
-        strokeWidth={MarkGeometry.strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle
-        cx={MarkGeometry.point.x}
-        cy={MarkGeometry.point.y}
-        r={MarkGeometry.point.radius}
-        fill={colors.point}
-      />
+    <svg width={size} height={size} viewBox={MarkViewBox} className={cn('shrink-0', className)} aria-hidden="true">
+      <path d={MarkPath} fill={Ink[tone]} />
+      <circle cx={MarkPoint.x} cy={MarkPoint.y} r={MarkPoint.radius} fill={LogoColors.yellow} />
     </svg>
   );
 }
 
-type BrandLockupProps = {
-  tone?: MarkTone;
-  className?: string;
-};
-
-export function BrandLockup({ tone = 'brand', className }: BrandLockupProps): React.JSX.Element {
+/** "risips" in the brand lettering, sized by height. */
+export function BrandWordmark({ height = 22, tone = 'brand', className }: { height?: number; tone?: MarkTone; className?: string }): React.JSX.Element {
   return (
-    <span className={cn('flex items-center gap-2.5', className)}>
-      <BrandMark size={30} tone={tone} />
-      <span className="leading-tight">
-        <span className="block text-[15px] font-semibold tracking-[-0.01em]">RiSips</span>
-        <span className="block text-[10.5px] tracking-[0.09em] uppercase opacity-60">Admin Portal</span>
-      </span>
+    <svg
+      height={height}
+      width={height * WordmarkAspectRatio}
+      viewBox={WordmarkViewBox}
+      className={cn('shrink-0', className)}
+      role="img"
+      aria-label="RiSips"
+    >
+      <path d={WordmarkBodyPath} fill={Ink[tone]} />
+      <path d={WordmarkDotsPath} fill={LogoColors.yellow} />
+    </svg>
+  );
+}
+
+/** Mark and wordmark together, spaced as on the sheet. */
+export function BrandLogo({ height = 28, tone = 'brand', className }: { height?: number; tone?: MarkTone; className?: string }): React.JSX.Element {
+  return (
+    <svg
+      height={height}
+      width={height * Lockup.aspectRatio}
+      viewBox={Lockup.viewBox}
+      className={cn('shrink-0', className)}
+      role="img"
+      aria-label="RiSips"
+    >
+      <g transform={`scale(${Lockup.markScale})`}>
+        <path d={MarkPath} fill={Ink[tone]} />
+        <circle cx={MarkPoint.x} cy={MarkPoint.y} r={MarkPoint.radius} fill={LogoColors.yellow} />
+      </g>
+      <g transform={Lockup.wordmarkTransform}>
+        <path d={WordmarkBodyPath} fill={Ink[tone]} />
+        <path d={WordmarkDotsPath} fill={LogoColors.yellow} />
+      </g>
+    </svg>
+  );
+}
+
+/** The sign-in screens' logo: the lockup, with which product this is beneath it. */
+export function BrandLockup({ tone = 'brand', className }: { tone?: MarkTone; className?: string }): React.JSX.Element {
+  return (
+    <span className={cn('flex flex-col items-start gap-1.5', className)}>
+      <BrandLogo height={34} tone={tone} />
+      <span className="text-[10.5px] tracking-[0.12em] uppercase opacity-60">Admin Portal</span>
     </span>
   );
 }

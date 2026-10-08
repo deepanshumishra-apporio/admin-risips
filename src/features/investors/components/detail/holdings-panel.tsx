@@ -15,11 +15,7 @@ export function HoldingsPanel({ investments }: { investments: InvestorInvestment
       <Card>
         <CardHeader
           title="Holdings"
-          subtitle={
-            portfolio.asOf
-              ? `From the RTA holdings report, valued ${formatDate(portfolio.asOf)}`
-              : 'Nothing allotted yet'
-          }
+          subtitle={portfolio.asOf ? `As of ${formatDate(portfolio.asOf)}` : undefined}
         />
         {portfolio.holdings.length === 0 ? (
           <CardBody>
@@ -33,7 +29,6 @@ export function HoldingsPanel({ investments }: { investments: InvestorInvestment
                 <ItemRow key={holding.id} item={{ type: 'holding', id: holding.id }} label={`holding ${holding.scheme}`}>
                   <Td>
                     <span className="block font-medium text-ink">{holding.scheme}</span>
-                    <span className="tabular block text-[11.5px] text-ink-muted">{holding.isin}</span>
                   </Td>
                   <Td className="tabular text-[13px]">{holding.folioNumber}</Td>
                   <Td className="tabular">
@@ -44,7 +39,6 @@ export function HoldingsPanel({ investments }: { investments: InvestorInvestment
                   </Td>
                   <Td className="tabular">
                     {holding.nav ? `₹${Number(holding.nav).toLocaleString('en-IN', { maximumFractionDigits: 4 })}` : '—'}
-                    {holding.navAsOn ? <span className="block text-[11.5px] text-ink-muted">{formatDate(holding.navAsOn)}</span> : null}
                   </Td>
                   <Td className="tabular">{formatInrString(holding.investedValue, { compact: false })}</Td>
                   <Td className="tabular font-semibold text-ink">{formatInrString(holding.currentValue, { compact: false })}</Td>
@@ -59,10 +53,10 @@ export function HoldingsPanel({ investments }: { investments: InvestorInvestment
       </Card>
 
       <Card>
-        <CardHeader title="Folios" subtitle="One per AMC the investor holds units with" />
+        <CardHeader title="Folios" />
         {folios.length === 0 ? (
           <CardBody>
-            <p className="text-[13px] text-ink-muted">No folio yet; one is opened by the first allotment at an AMC.</p>
+            <p className="text-[13px] text-ink-muted">No folios yet.</p>
           </CardBody>
         ) : (
           <Table headers={['Folio number', 'AMC', 'Holding pattern', 'Schemes']}>

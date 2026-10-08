@@ -22,10 +22,7 @@ type InvestorsPageProps = {
 
 export default async function InvestorsPage({ searchParams }: InvestorsPageProps): Promise<React.JSX.Element> {
   const header = (
-    <PageHeader
-      title="Investors"
-      description="Every investor on the platform, with where they are in onboarding and KYC."
-    />
+    <PageHeader title="Investors" />
   );
   if (!(await hasPermission('investors.read'))) {
     return (
@@ -52,7 +49,6 @@ export default async function InvestorsPage({ searchParams }: InvestorsPageProps
             {result.total === 1 ? 'investor' : 'investors'}
             {onLaterPage ? ' · showing a later page' : ''}
           </p>
-          <p className="text-[12px] text-ink-muted">PANs are masked. Opening a record is logged.</p>
         </div>
 
         <InvestorTable investors={result.items} />

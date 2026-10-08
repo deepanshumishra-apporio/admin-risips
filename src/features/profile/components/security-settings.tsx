@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Field, TextInput } from '@/components/ui/field';
+import { Field, PasswordInput } from '@/components/ui/field';
 import { Toggle } from '@/components/ui/toggle';
 import { ActiveSessions } from '@/data/profile';
 
@@ -22,13 +22,13 @@ export function SecuritySettings(): React.JSX.Element {
         />
         <CardBody className="grid max-w-2xl gap-4 sm:grid-cols-3">
           <Field label="Current password">
-            <TextInput type="password" placeholder="••••••••••••" />
+            <PasswordInput placeholder="••••••••••••" />
           </Field>
           <Field label="New password">
-            <TextInput type="password" placeholder="••••••••••••" />
+            <PasswordInput placeholder="••••••••••••" />
           </Field>
           <Field label="Confirm new password">
-            <TextInput type="password" placeholder="••••••••••••" />
+            <PasswordInput placeholder="••••••••••••" />
           </Field>
         </CardBody>
         <footer className="flex justify-end border-t border-line px-4 py-3">

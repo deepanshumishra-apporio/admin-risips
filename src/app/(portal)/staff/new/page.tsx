@@ -7,7 +7,8 @@ import { Card, CardBody } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
 import { CreateStaffForm } from '@/features/staff/components/create-staff-form';
 import { listRoles } from '@/lib/api/staff-admin';
-import { hasPermission } from '@/lib/auth/session';
+import { currentStaff, hasPermission } from '@/lib/auth/session';
+import { myLevel } from '@/features/staff/hierarchy';
 
 export const metadata: Metadata = { title: 'Add staff member · RiSips Admin' };
 
@@ -20,7 +21,7 @@ export default async function NewStaffPage(): Promise<React.JSX.Element> {
       </>
     );
   }
-  const roles = await listRoles();
+  const [roles, me] = await Promise.all([listRoles(), currentStaff()]);
 
   return (
     <>
@@ -34,7 +35,7 @@ export default async function NewStaffPage(): Promise<React.JSX.Element> {
       />
       <Card className="max-w-2xl">
         <CardBody>
-          <CreateStaffForm roles={roles} />
+          <CreateStaffForm roles={roles} actorLevel={myLevel(me)} />
         </CardBody>
       </Card>
     </>

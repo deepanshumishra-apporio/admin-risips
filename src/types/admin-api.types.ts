@@ -11,7 +11,10 @@ export type Permission =
   | 'support.manage'
   | 'compliance.manage'
   | 'announcements.manage'
-  | 'staff.manage';
+  | 'portfolios.manage'
+  | 'meetings.manage'
+  | 'staff.manage'
+  | 'roles.manage';
 
 export type MfaState = 'SETUP_REQUIRED' | 'VERIFY_REQUIRED' | 'VERIFIED';
 
@@ -209,6 +212,11 @@ export type Role = {
   isSystem: boolean;
   permissions: Permission[];
   staffCount: number;
+};
+
+export type PermissionInfo = {
+  key: Permission;
+  description: string;
 };
 
 export type StaffListItem = {

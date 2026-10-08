@@ -38,12 +38,6 @@ function Amounts({ order }: { order: Order }): React.JSX.Element {
       {processed ? (
         <span className="tabular block text-[11.5px] text-ink-muted">
           {order.kind === 'PURCHASE' ? 'allotted' : order.kind === 'REDEMPTION' ? 'redeemed' : 'switched'} {processed}
-          {order.processedAmount && order.processedUnits ? ` · ${unitsText(order.processedUnits)}` : ''}
-        </span>
-      ) : null}
-      {order.price ? (
-        <span className="tabular block text-[11.5px] text-ink-muted">
-          at ₹{Number(order.price).toLocaleString('en-IN', { maximumFractionDigits: 4 })}
         </span>
       ) : null}
     </>
@@ -59,7 +53,6 @@ export function OrdersPanel({ orders }: { orders: Order[] }): React.JSX.Element 
     <Card>
       <CardHeader
         title="Orders"
-        subtitle="Purchases, redemptions and switches — one-time and plan instalments — newest first"
         action={
           <div className="flex flex-wrap gap-1">
             {Filters.map((item) => (
@@ -88,13 +81,14 @@ export function OrdersPanel({ orders }: { orders: Order[] }): React.JSX.Element 
             <ItemRow key={order.id} item={{ type: OrderItemType[order.kind], id: order.id }} label={`${order.kind.toLowerCase()} ${order.scheme}`}>
               <Td className="text-[13px]">
                 {formatDateTime(order.placedAt)}
-                {order.completedAt ? (
-                  <span className="block text-[11.5px] text-ink-muted">done {formatDateTime(order.completedAt)}</span>
-                ) : null}
               </Td>
               <Td>
                 <Badge tone={KindTone[order.kind]}>{OrderKindLabel[order.kind]}</Badge>
-                <span className="mt-1 block text-[11.5px] text-ink-muted">{OrderSourceLabel[order.source]}</span>
+                {order.source !== 'ONE_TIME' ? (
+                  <span className="ml-1.5 text-[11.5px] font-medium text-ink-muted" title={OrderSourceLabel[order.source]}>
+                    {order.source}
+                  </span>
+                ) : null}
               </Td>
               <Td>
                 <span className="block font-medium text-ink">{order.scheme}</span>
@@ -107,7 +101,9 @@ export function OrdersPanel({ orders }: { orders: Order[] }): React.JSX.Element 
               <Td>
                 <Badge tone={stateTone(order.state)}>{humanize(order.state)}</Badge>
                 {order.failureReason ? (
-                  <span className="mt-1 block max-w-[220px] text-[11.5px] text-ink-muted">{order.failureReason}</span>
+                  <span className="mt-1 block max-w-[220px] truncate text-[11.5px] text-danger" title={order.failureReason}>
+                    {order.failureReason}
+                  </span>
                 ) : null}
               </Td>
             </ItemRow>

@@ -17,11 +17,14 @@ type PageTabsProps = {
 /** Route-backed tabs for screens that belong to the same section. */
 export function PageTabs({ tabs }: PageTabsProps): React.JSX.Element {
   const pathname = usePathname();
+  // The most specific tab wins, so /staff/roles lights "Roles" rather than "Staff".
+  const matches = tabs.filter((tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`));
+  const current = matches.sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <div className="mb-5 flex gap-1 border-b border-line">
       {tabs.map((tab) => {
-        const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        const active = tab.href === current;
 
         return (
           <Link

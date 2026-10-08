@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { OrderKindLabel, OrderSourceLabel, PlanKindDescription, stateTone } from '@/features/investors/money-labels';
+import { OrderKindLabel, OrderSourceLabel, stateTone } from '@/features/investors/money-labels';
 import type {
   HoldingDetail,
   InvestorItem,
@@ -36,6 +36,19 @@ const dateTime = (value: string | null | undefined): string | null => (value ? f
 
 // --- building blocks -------------------------------------------------------------------
 
+/** Secondary detail folds away behind its title, so the panel opens on what matters. */
+function More({ title, children }: { title: string; children: ReactNode }): React.JSX.Element {
+  return (
+    <details className="group border-t border-line pt-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between text-[12px] font-semibold tracking-[0.05em] text-ink-muted uppercase hover:text-ink [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
+      </summary>
+      <div className="mt-2.5">{children}</div>
+    </details>
+  );
+}
+
 function Section({ title, children, aside }: { title: string; children: ReactNode; aside?: ReactNode }): React.JSX.Element {
   return (
     <section className="border-t border-line pt-4 first:border-t-0 first:pt-0">
@@ -64,7 +77,7 @@ function Facts({ rows }: { rows: [string, ReactNode | null | undefined][] }): Re
 }
 
 function Events({ events }: { events: ItemEvent[] }): React.JSX.Element {
-  if (events.length === 0) return <p className="text-[13px] text-ink-muted">No events recorded yet.</p>;
+  if (events.length === 0) return <p className="text-[13px] text-ink-muted">Nothing yet.</p>;
   return (
     <ol className="relative space-y-3 border-l border-line pl-4">
       {events.map((event) => (
@@ -168,25 +181,16 @@ function HoldingView({ holding, onOpen }: { holding: HoldingDetail; onOpen: Open
           rows={[
             ['Units held', units(holding.units)],
             ['Redeemable now', units(holding.redeemableUnits)],
-            ['Units as of', date(holding.unitsAsOn)],
             ['NAV', holding.nav ? `${nav(holding.nav)}${holding.navAsOn ? ` (${formatDate(holding.navAsOn)})` : ''}` : null],
             ['Dividend paid out', inr(holding.payoutAmount)],
             ['Folio', holding.folio ? <Reference key="folio" value={holding.folio.number} /> : holding.folioNumber],
-            ['AMC code', holding.folio?.amcCode],
-            ['Holding pattern', holding.folio?.holdingPattern ? humanize(holding.folio.holdingPattern) : null],
           ]}
         />
       </Section>
 
-      {holding.schemeFacts ? (
-        <Section title="Scheme">
-          <Scheme facts={holding.schemeFacts} />
-        </Section>
-      ) : null}
-
       <Section title="Plans on this scheme" aside={<span className="text-[12px] text-ink-muted">{holding.plans.length}</span>}>
         {holding.plans.length === 0 ? (
-          <p className="text-[13px] text-ink-muted">No SIP, SWP or STP on this scheme.</p>
+          <p className="text-[13px] text-ink-muted">None.</p>
         ) : (
           <ul className="divide-y divide-line rounded-lg border border-line">
             {holding.plans.map((plan) => (
@@ -211,8 +215,14 @@ function HoldingView({ holding, onOpen }: { holding: HoldingDetail; onOpen: Open
       </Section>
 
       <Section title="Orders on this holding" aside={<span className="text-[12px] text-ink-muted">{holding.orders.length}</span>}>
-        <OrderList orders={holding.orders} onOpen={onOpen} empty="No orders on this scheme in this folio." />
+        <OrderList orders={holding.orders} onOpen={onOpen} empty="No orders yet." />
       </Section>
+
+      {holding.schemeFacts ? (
+        <More title="Scheme details">
+          <Scheme facts={holding.schemeFacts} />
+        </More>
+      ) : null}
     </div>
   );
 }
@@ -221,7 +231,6 @@ function PlanView({ plan, onOpen }: { plan: PlanDetail; onOpen: Open }): React.J
   const pct = plan.totalInstallments ? (plan.installmentsSucceeded / plan.totalInstallments) * 100 : 0;
   return (
     <div className="space-y-5">
-      <p className="text-[12.5px] text-ink-muted">{PlanKindDescription[plan.kind]}</p>
       <div className="grid grid-cols-3 gap-2.5">
         <Headline label="Instalment" value={inr(plan.amount) ?? units(plan.units) ?? '—'} sub={humanize(plan.frequency)} />
         <Headline label="Next" value={plan.nextInstallmentDate ? formatDate(plan.nextInstallmentDate) : '—'} sub={plan.previousInstallmentDate ? `last ${formatDate(plan.previousInstallmentDate)}` : null} />
@@ -238,10 +247,8 @@ function PlanView({ plan, onOpen }: { plan: PlanDetail; onOpen: Open }): React.J
             ['Day of month', plan.installmentDay ? String(plan.installmentDay) : null],
             ['Start', date(plan.startDate)],
             ['End', date(plan.endDate)],
-            ['Requested start', date(plan.requestedActivationDate)],
             ['Folio', plan.folioNumber],
-            ['Instalment orders placed', String(plan.installmentsPlaced)],
-            ['Not successful', String(plan.installmentsPlaced - plan.installmentsSucceeded)],
+            ['Failed', plan.installmentsPlaced > plan.installmentsSucceeded ? String(plan.installmentsPlaced - plan.installmentsSucceeded) : null],
           ]}
         />
       </Section>
@@ -274,20 +281,20 @@ function PlanView({ plan, onOpen }: { plan: PlanDetail; onOpen: Open }): React.J
       ) : null}
 
       <Section title="Instalments" aside={<span className="text-[12px] text-ink-muted">{plan.installments.length}</span>}>
-        <OrderList orders={plan.installments} onOpen={onOpen} empty="No instalment has been placed yet." />
+        <OrderList orders={plan.installments} onOpen={onOpen} empty="None placed yet." />
       </Section>
 
-      <Section title="History">
+      <More title="History">
         <Events events={plan.events} />
-      </Section>
+      </More>
 
-      <Section title="Scheme">
+      <More title="Scheme details">
         <Scheme facts={plan.schemeFacts} />
-      </Section>
+      </More>
 
-      <Section title="References">
+      <More title="References">
         <Facts rows={[['FP plan id', <Reference key="fp" value={plan.fpId} />], ['Gateway', plan.gateway ? humanize(plan.gateway) : null]]} />
-      </Section>
+      </More>
     </div>
   );
 }
@@ -312,8 +319,7 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
             ['Folio', order.folioNumber],
             ['Scheduled for', date(order.scheduledOn)],
             ['Traded on', date(order.tradedOn)],
-            ['Initiated by', order.initiatedBy ? humanize(order.initiatedBy) : null],
-            ['Via', order.initiatedVia ? humanize(order.initiatedVia) : null],
+            ['Initiated', [order.initiatedBy, order.initiatedVia].filter(Boolean).map((part) => humanize(part)).join(' · ') || null],
           ]}
         />
       </Section>
@@ -342,9 +348,9 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
       ) : null}
 
       {order.consent ? (
-        <Section title="Investor consent (2FA)">
+        <More title="Investor consent (2FA)">
           <Facts rows={[['Given', dateTime(order.consent.at)], ['Email', order.consent.email], ['Mobile', order.consent.mobile]]} />
-        </Section>
+        </More>
       ) : null}
 
       {order.payoutAccount ? (
@@ -356,7 +362,7 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
       {order.kind === 'PURCHASE' ? (
         <Section title="Payments" aside={<span className="text-[12px] text-ink-muted">{order.payments.length}</span>}>
           {order.payments.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">No payment recorded against this order.</p>
+            <p className="text-[13px] text-ink-muted">None recorded.</p>
           ) : (
             <ul className="divide-y divide-line rounded-lg border border-line">
               {order.payments.map((payment) => (
@@ -380,15 +386,15 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
         </Section>
       ) : null}
 
-      <Section title="History">
+      <More title="History">
         <Events events={order.events} />
-      </Section>
+      </More>
 
-      <Section title="Scheme">
+      <More title="Scheme details">
         <Scheme facts={order.schemeFacts} />
-      </Section>
+      </More>
 
-      <Section title="References">
+      <More title="References">
         <Facts
           rows={[
             ['FP order id', <Reference key="fp" value={order.fpId} />],
@@ -396,7 +402,7 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
             ['Gateway', order.gateway ? humanize(order.gateway) : null],
           ]}
         />
-      </Section>
+      </More>
     </div>
   );
 }
@@ -418,7 +424,7 @@ function PaymentView({ payment, onOpen }: { payment: PaymentDetail; onOpen: Open
             ['From account', payment.bankAccount ? `${payment.bankAccount.bankName ?? 'Bank'} · ${payment.bankAccount.accountNumber}` : null],
             ['Mandate', payment.mandate ? `${humanize(payment.mandate.type)} · ${humanize(payment.mandate.status)}` : null],
             ['UMRN', payment.mandate?.umrn],
-            ['Authorised late', payment.lateAuth === null ? null : payment.lateAuth ? 'Yes' : 'No'],
+            ['Authorised late', payment.lateAuth ? 'Yes' : null],
           ]}
         />
       </Section>
@@ -445,16 +451,16 @@ function PaymentView({ payment, onOpen }: { payment: PaymentDetail; onOpen: Open
       ) : null}
 
       <Section title="Pays for" aside={<span className="text-[12px] text-ink-muted">{payment.purchases.length}</span>}>
-        <OrderList orders={payment.purchases} onOpen={onOpen} empty="Not linked to a purchase." />
+        <OrderList orders={payment.purchases} onOpen={onOpen} empty="No linked purchase." />
       </Section>
 
-      <Section title="History">
+      <More title="History">
         <Events events={payment.events} />
-      </Section>
+      </More>
 
-      <Section title="References">
+      <More title="References">
         <Facts rows={[['FP payment id', <Reference key="fp" value={String(payment.fpId)} />]]} />
-      </Section>
+      </More>
     </div>
   );
 }

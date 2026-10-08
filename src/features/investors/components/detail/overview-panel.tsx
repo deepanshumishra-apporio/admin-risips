@@ -2,6 +2,7 @@ import { AlertTriangle, CalendarClock, PauseCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
+import { OverviewCharts } from '@/features/investors/components/detail/overview-charts';
 import { ItemButton } from '@/features/investors/components/item-panel/item-panel';
 import { PlanKindLabel } from '@/features/investors/money-labels';
 import type { InvestorInvestments, InvestorItemType, PlanKind } from '@/types/admin-api.types';
@@ -24,17 +25,33 @@ const when = (date: string): string => {
   return `${formatDate(date)} · in ${days} days`;
 };
 
+function Tile({ label, value, danger = false }: { label: string; value: string; danger?: boolean }): React.JSX.Element {
+  return (
+    <div className="rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3">
+      <dt className="text-[12px] text-ink-muted">{label}</dt>
+      <dd className={`tabular mt-1 text-[17px] leading-none font-semibold ${danger ? 'text-danger' : 'text-ink'}`}>{value}</dd>
+    </div>
+  );
+}
+
 /** What happens next, and the money in and out so far — the first things support is asked about. */
 export function OverviewPanel({ investments }: { investments: InvestorInvestments }): React.JSX.Element {
-  const { upcoming, orderTotals, summary } = investments;
+  const { upcoming, orderTotals } = investments;
 
   return (
     <div className="space-y-4">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <Tile label="Purchased" value={formatInrString(orderTotals.purchased)} />
+        <Tile label="Redeemed" value={formatInrString(orderTotals.redeemed)} />
+        <Tile label="Switched" value={formatInrString(orderTotals.switched)} />
+        <Tile label="In progress" value={formatCount(orderTotals.inFlight)} />
+        <Tile label="Failed" value={formatCount(orderTotals.failed)} danger={orderTotals.failed > 0} />
+      </dl>
+
+      <OverviewCharts investments={investments} />
+
       <Card>
-        <CardHeader
-          title="Coming up"
-          subtitle="The next instalment of every live SIP, SWP and STP, soonest first"
-        />
+        <CardHeader title="Coming up" />
         {upcoming.length === 0 ? (
           <CardBody>
             <p className="text-[13px] text-ink-muted">No instalments scheduled.</p>
@@ -68,7 +85,7 @@ export function OverviewPanel({ investments }: { investments: InvestorInvestment
                     ) : null}
                     {item.mandateReady === false ? (
                       <span className="inline-flex items-center gap-1 text-danger">
-                        <AlertTriangle className="size-3.5" /> Mandate not approved
+                        <AlertTriangle className="size-3.5" /> No mandate
                       </span>
                     ) : null}
                   </span>
@@ -83,57 +100,6 @@ export function OverviewPanel({ investments }: { investments: InvestorInvestment
         )}
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader title="Money moved" subtitle="Successful orders, all time" />
-          <CardBody>
-            <dl className="space-y-2.5 text-[13px]">
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Invested (purchases)</dt>
-                <dd className="tabular font-semibold text-ink">{formatInrString(orderTotals.purchased, { compact: false })}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Redeemed</dt>
-                <dd className="tabular font-semibold text-ink">{formatInrString(orderTotals.redeemed, { compact: false })}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Switched between schemes</dt>
-                <dd className="tabular font-semibold text-ink">{formatInrString(orderTotals.switched, { compact: false })}</dd>
-              </div>
-            </dl>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="Plans and orders" />
-          <CardBody>
-            <dl className="space-y-2.5 text-[13px]">
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Active SIPs</dt>
-                <dd className="tabular font-semibold text-ink">
-                  {formatCount(summary.activeSips)} · {formatInrString(summary.sipMonthlyAmount, { compact: false })}/mo
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Active SWPs · STPs</dt>
-                <dd className="tabular font-semibold text-ink">
-                  {formatCount(summary.activeSwps)} · {formatCount(summary.activeStps)}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Orders in progress</dt>
-                <dd className="tabular font-semibold text-ink">{formatCount(orderTotals.inFlight)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Failed orders</dt>
-                <dd className={`tabular font-semibold ${orderTotals.failed ? 'text-danger' : 'text-ink'}`}>
-                  {formatCount(orderTotals.failed)}
-                </dd>
-              </div>
-            </dl>
-          </CardBody>
-        </Card>
-      </div>
     </div>
   );
 }

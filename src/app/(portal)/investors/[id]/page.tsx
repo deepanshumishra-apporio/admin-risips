@@ -18,12 +18,12 @@ import { OverviewPanel } from '@/features/investors/components/detail/overview-p
 import { PaymentsPanel } from '@/features/investors/components/detail/payments-panel';
 import { PlansPanel } from '@/features/investors/components/detail/plans-panel';
 import { TimelinePanel } from '@/features/investors/components/detail/timeline-panel';
-import { KycLabel, NextStepLabel, StageLabel } from '@/features/investors/labels';
+import { KycLabel, StageLabel } from '@/features/investors/labels';
 import { isLivePlan } from '@/features/investors/money-labels';
 import { getInvestor } from '@/lib/api/admin';
 import { ApiError } from '@/lib/api/errors';
 import { hasPermission } from '@/lib/auth/session';
-import type { InvestorDetail } from '@/types/admin-api.types';
+import type { InvestorDetail, Plan } from '@/types/admin-api.types';
 import { formatCount, formatDate, formatInrString, timeAgo } from '@/utils/format';
 import { JourneyStageTone, KycStatusTone } from '@/utils/tone';
 
@@ -55,15 +55,8 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
   const { summary, investments } = detail;
   const canRaiseTicket = await hasPermission('support.manage');
   const { portfolio, plans, summary: money } = investments;
-  const gain = Number(portfolio.gain);
-  const livePlans = [...plans.sips, ...plans.swps, ...plans.stps].filter((plan) => isLivePlan(plan.state)).length;
-  const kycCaption = summary.kycNextStep
-    ? NextStepLabel[summary.kycNextStep]
-    : summary.kycCompletedVia === 'KRA'
-      ? 'Verified at the KRA'
-      : summary.kycCompletedVia === 'KYC_FORM'
-        ? 'Via our digital KYC form'
-        : undefined;
+  const gainPercent = Number(portfolio.investedValue) > 0 ? Number(portfolio.gainPercent ?? 0) : null;
+  const liveCount = (list: Plan[]): number | undefined => list.filter((plan) => isLivePlan(plan.state)).length || undefined;
 
   return (
     <>
@@ -74,7 +67,7 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
 
       <PageHeader
         title={summary.name ?? 'Unnamed investor'}
-        description={`Signed up ${formatDate(summary.signedUpAt)} · Last active ${timeAgo(summary.lastActivityAt)}`}
+        description={`Active ${timeAgo(summary.lastActivityAt)}`}
         actions={
           <>
             <Badge tone={JourneyStageTone[summary.stage]} dot>
@@ -99,36 +92,16 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
         items={[
           {
             label: 'Current value',
-            hint: 'From the latest RTA holdings report.',
+            hint: portfolio.asOf ? `RTA holdings as of ${formatDate(portfolio.asOf)}` : 'Nothing allotted yet',
             value: formatInrString(portfolio.currentValue),
-            caption: portfolio.asOf ? `as of ${formatDate(portfolio.asOf)}` : 'nothing allotted yet',
+            ...(gainPercent !== null && { delta: gainPercent }),
           },
+          { label: 'Invested', value: formatInrString(portfolio.investedValue) },
           {
-            label: 'Invested',
-            value: formatInrString(portfolio.investedValue),
-            caption:
-              Number(portfolio.investedValue) > 0
-                ? `${gain >= 0 ? '+' : '−'}${formatInrString(String(Math.abs(gain)))} (${portfolio.gainPercent ?? '0.00'}%)`
-                : 'cost of units held',
+            label: 'SIPs',
+            value: money.activeSips ? `${formatCount(money.activeSips)} · ${formatInrString(money.sipMonthlyAmount)}/mo` : '—',
           },
-          {
-            label: 'Active SIPs',
-            value: formatCount(money.activeSips),
-            caption: `${formatInrString(money.sipMonthlyAmount, { compact: false })} a month`,
-          },
-          {
-            label: 'Next SIP',
-            value: money.nextSip ? formatDate(money.nextSip.date) : '—',
-            caption: money.nextSip
-              ? `${formatInrString(money.nextSip.amount, { compact: false })}${money.nextSip.count > 1 ? ` across ${money.nextSip.count} SIPs` : ''}`
-              : 'none scheduled',
-          },
-          {
-            label: 'SWP · STP',
-            value: `${formatCount(money.activeSwps)} · ${formatCount(money.activeStps)}`,
-            caption: 'active withdrawal · transfer plans',
-          },
-          { label: 'KYC', value: KycLabel[summary.kycStatus], ...(kycCaption && { caption: kycCaption }) },
+          { label: 'Next SIP', value: money.nextSip ? formatDate(money.nextSip.date) : '—' },
         ]}
       />
 
@@ -139,24 +112,48 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
           tabs={[
             { label: 'Overview', content: <OverviewPanel investments={investments} /> },
             {
-              label: 'Holdings',
-              count: portfolio.holdings.length || undefined,
-              content: <HoldingsPanel investments={investments} />,
+              label: 'Investments',
+              content: (
+                <SectionTabs
+                  variant="pills"
+                  tabs={[
+                    {
+                      label: 'Holdings',
+                      count: portfolio.holdings.length || undefined,
+                      content: <HoldingsPanel investments={investments} />,
+                    },
+                    { label: 'SIP', count: liveCount(plans.sips), content: <PlansPanel kind="SIP" plans={plans.sips} /> },
+                    { label: 'SWP', count: liveCount(plans.swps), content: <PlansPanel kind="SWP" plans={plans.swps} /> },
+                    { label: 'STP', count: liveCount(plans.stps), content: <PlansPanel kind="STP" plans={plans.stps} /> },
+                    { label: 'Orders', count: investments.orders.length || undefined, content: <OrdersPanel orders={investments.orders} /> },
+                    {
+                      label: 'Payments',
+                      count: investments.payments.length || undefined,
+                      content: <PaymentsPanel payments={investments.payments} />,
+                    },
+                  ]}
+                />
+              ),
             },
-            { label: 'SIP · SWP · STP', count: livePlans || undefined, content: <PlansPanel plans={plans} /> },
-            { label: 'Orders', count: investments.orders.length || undefined, content: <OrdersPanel orders={investments.orders} /> },
             {
-              label: 'Payments',
-              count: investments.payments.length || undefined,
-              content: <PaymentsPanel payments={investments.payments} />,
+              label: 'Details',
+              content: (
+                <SectionTabs
+                  variant="pills"
+                  tabs={[
+                    { label: 'KYC', content: <KycPanel kyc={detail.kyc} /> },
+                    {
+                      label: 'Bank & nominees',
+                      count: detail.bankAccounts.length || undefined,
+                      content: (
+                        <AccountsPanel bankAccounts={detail.bankAccounts} nomination={detail.nomination} mandates={detail.mandates} />
+                      ),
+                    },
+                    { label: 'Timeline', content: <TimelinePanel timeline={detail.timeline} /> },
+                  ]}
+                />
+              ),
             },
-            { label: 'KYC', count: detail.kyc.forms.length || undefined, content: <KycPanel kyc={detail.kyc} /> },
-            {
-              label: 'Bank & nominees',
-              count: detail.bankAccounts.length || undefined,
-              content: <AccountsPanel bankAccounts={detail.bankAccounts} nomination={detail.nomination} mandates={detail.mandates} />,
-            },
-            { label: 'Timeline', content: <TimelinePanel timeline={detail.timeline} /> },
           ]}
         />
 

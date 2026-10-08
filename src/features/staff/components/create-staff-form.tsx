@@ -7,12 +7,13 @@ import { Field, TextInput } from '@/components/ui/field';
 import { FormError, SubmitButton } from '@/features/auth/components/form-parts';
 import { createStaff, type StaffFormState } from '@/features/staff/actions';
 import { RolePicker } from '@/features/staff/components/role-picker';
+import type { StaffLevel } from '@/features/staff/hierarchy';
 import { TemporaryPasswordReveal } from '@/features/staff/components/temporary-password';
 import type { Role } from '@/types/admin-api.types';
 
 const Initial: StaffFormState = { error: null };
 
-export function CreateStaffForm({ roles }: { roles: Role[] }): React.JSX.Element {
+export function CreateStaffForm({ roles, actorLevel }: { roles: Role[]; actorLevel: StaffLevel }): React.JSX.Element {
   const [state, action] = useActionState(createStaff, Initial);
 
   if (state.temporaryPassword && state.staffId) {
@@ -48,7 +49,7 @@ export function CreateStaffForm({ roles }: { roles: Role[] }): React.JSX.Element
       <Field label="Phone" hint="Optional. For contact only — never used to sign in.">
         <TextInput name="phone" type="tel" maxLength={20} autoComplete="off" />
       </Field>
-      <RolePicker roles={roles} selected={[]} />
+      <RolePicker roles={roles} selected={[]} actorLevel={actorLevel} />
       <div className="max-w-xs pt-1">
         <SubmitButton>Create account</SubmitButton>
       </div>

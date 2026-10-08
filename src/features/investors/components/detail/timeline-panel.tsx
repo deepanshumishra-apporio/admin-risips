@@ -5,7 +5,7 @@ import { formatDateTime } from '@/utils/format';
 export function TimelinePanel({ timeline }: { timeline: InvestorDetail['timeline'] }): React.JSX.Element {
   return (
     <Card>
-      <CardHeader title="Timeline" subtitle="Milestones in the order they happened" />
+      <CardHeader title="Timeline" />
       <CardBody>
         {timeline.length === 0 ? (
           <p className="text-[13px] text-ink-muted">Nothing recorded yet.</p>
