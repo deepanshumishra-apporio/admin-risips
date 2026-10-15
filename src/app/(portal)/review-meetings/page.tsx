@@ -1,14 +1,9 @@
-import { PageHeader } from '@/components/layout/page-header';
-import { ReviewMeetingsBoard } from '@/features/meetings/components/review-meetings-board';
+import { notFound } from 'next/navigation';
 
-export default function ReviewMeetingsPage(): React.JSX.Element {
-  return (
-    <>
-      <PageHeader
-        title="Review meetings"
-        description="Admins and agents conduct reviews — in person in phase 01 — and capture the notes that update an investor's curated portfolio."
-      />
-      <ReviewMeetingsBoard />
-    </>
-  );
+/**
+ * Review meetings are parked for a later release: the screen is built
+ * (`features/meetings/review-meetings-screen.tsx`) but not shown.
+ */
+export default function ReviewMeetingsPage(): never {
+  notFound();
 }

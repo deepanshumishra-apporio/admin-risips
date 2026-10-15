@@ -67,7 +67,7 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
             // itself and the session cookie never meets page script.
             <a
               href={exportHref(key, filters)}
-              className="inline-flex h-9.5 items-center gap-2 rounded-md border border-transparent bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-deep"
+              className="inline-flex h-9.5 items-center gap-2 rounded-md border border-transparent bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-strong"
             >
               <Download className="size-4" />
               Download CSV

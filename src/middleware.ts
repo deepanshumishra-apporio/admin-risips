@@ -5,12 +5,14 @@ import { NextResponse, type NextRequest } from 'next/server';
  * the edge cannot validate a token — so every page still verifies the session
  * with the API (`authedRequest`), which is the real check.
  *
- * Both cookie names are accepted so this file needs no server-only import.
+ * Only this environment's cookie name counts (mirrors `SessionCookieName`,
+ * which is server-only and cannot be imported here): in production a planted
+ * plain `risips_admin` cookie must not pass for the `__Host-` one.
  */
-const SessionCookies = ['__Host-risips_admin', 'risips_admin'];
+const SessionCookie = process.env.NODE_ENV === 'production' ? '__Host-risips_admin' : 'risips_admin';
 
 export function middleware(request: NextRequest): NextResponse {
-  const signedIn = SessionCookies.some((name) => request.cookies.has(name));
+  const signedIn = Boolean(request.cookies.get(SessionCookie)?.value);
   if (signedIn) return NextResponse.next();
 
   const target = new URL('/signin', request.url);
@@ -21,5 +23,7 @@ export function middleware(request: NextRequest): NextResponse {
 
 export const config = {
   // Everything except sign-in, the session-expiry route and static assets.
-  matcher: ['/((?!signin|auth|_next/static|_next/image|icon.svg|favicon.ico).*)'],
+  // Each exclusion is anchored to a whole path segment: unanchored, a future
+  // `/authorizations` or `/signin-logs` page would silently skip this gate.
+  matcher: ['/((?!(?:signin|auth|_next/static|_next/image)(?:/|$)|(?:icon\\.svg|favicon\\.ico)$).*)'],
 };

@@ -139,7 +139,7 @@ export default async function CompliancePage({ searchParams }: CompliancePagePro
               className="h-9 w-[280px] rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[13.5px] text-ink focus:border-brand focus:ring-3 focus:ring-brand/12 focus:outline-none"
             />
           </span>
-          <button type="submit" className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep">
+          <button type="submit" className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-strong">
             Search
           </button>
         </form>

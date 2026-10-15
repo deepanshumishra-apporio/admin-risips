@@ -41,7 +41,7 @@ export default async function AnnouncementsPage({ searchParams }: AnnouncementsP
       description="Offers, product updates and notices to investors — as an in-app notification, a home banner, or both. Every announcement is approved by a second admin."
       {...(canManage && {
         actions: (
-          <Link href="/announcements/new" className="inline-flex h-9.5 items-center gap-2 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep">
+          <Link href="/announcements/new" className="inline-flex h-9.5 items-center gap-2 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-strong">
             <Plus className="size-4" />
             New announcement
           </Link>

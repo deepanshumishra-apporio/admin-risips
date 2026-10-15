@@ -31,7 +31,8 @@ export function Sidebar({ permissions }: { permissions: Permission[] }): React.J
     <aside
       className={cn(
         'sticky top-[var(--shell-header)] hidden h-[calc(100vh-var(--shell-header))] w-[var(--shell-sidebar)]',
-        'shrink-0 flex-col overflow-hidden border-r border-line bg-surface transition-[width] duration-200 lg:flex',
+        // Navy in both themes, as in the design: the sidebar takes the dark values.
+        'theme-dark shrink-0 flex-col overflow-hidden border-r border-line bg-navy text-ink transition-[width] duration-200 lg:flex',
       )}
     >
       <div className={cn('p-3', collapsed && 'px-2')}>

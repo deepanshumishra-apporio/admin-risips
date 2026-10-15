@@ -20,7 +20,7 @@ function SaveRow({ saved }: { saved: boolean | undefined }): React.JSX.Element {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-9 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
+        className="inline-flex h-9 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
       >
         {pending ? 'Saving…' : 'Save'}
       </button>

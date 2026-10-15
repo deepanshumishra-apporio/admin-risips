@@ -95,7 +95,7 @@ export function TransactionFiltersBar({ filters }: { filters: TransactionFilters
         {filters.attention ? <input type="hidden" name="attention" value="true" /> : null}
         {filters.flag.length ? <input type="hidden" name="flag" value={filters.flag.join(',')} /> : null}
 
-        <button type="submit" className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-deep">
+        <button type="submit" className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-strong">
           Apply
         </button>
         <Link href="/transactions" className="h-9 rounded-md px-3 text-[13.5px] leading-9 font-medium text-ink-muted hover:text-ink">

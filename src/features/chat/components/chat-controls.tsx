@@ -117,7 +117,7 @@ export function ChatComposer({ chat, viewerId }: { chat: ChatDetail; viewerId: s
               type="button"
               onClick={send}
               disabled={text.trim().length === 0 || pending}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
               Send

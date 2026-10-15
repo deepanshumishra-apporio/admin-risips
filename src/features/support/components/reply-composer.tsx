@@ -59,7 +59,7 @@ export function ReplyComposer({ ticketId, closed }: { ticketId: string; closed: 
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-deep disabled:opacity-50"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-strong disabled:opacity-50"
           >
             <Send className="size-3.5" />
             {internal ? 'Add note' : 'Send reply'}

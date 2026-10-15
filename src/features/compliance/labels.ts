@@ -1,8 +1,11 @@
 import type { BadgeTone } from '@/components/ui/badge';
 import type { ComplianceKind, ComplianceListQuery, ComplianceSeverity, ComplianceStatus } from '@/types/admin-api.types';
 
+/** Filter order: money and monitoring first, then 2FA and KYC, then AML review, then hygiene. */
 export const ComplianceKinds: readonly ComplianceKind[] = [
-  'PAID_NOT_ALLOTTED', 'MANDATE_REJECTED', 'SIP_FAILURES', 'ORDER_STUCK', 'KYC_STALLED', 'KYC_FAILED', 'MANDATE_PENDING', 'NOMINEE_MISSING',
+  'MONITORING_STALE', 'PAID_NOT_ALLOTTED', 'REDEMPTION_PAYOUT_PENDING', 'REFUND_PENDING', 'CONSENT_MISSING',
+  'MANDATE_REJECTED', 'SIP_FAILURES', 'ORDER_STUCK', 'COMPLAINT_OVERDUE', 'KYC_NOT_COMPLIANT', 'KYC_STALLED', 'KYC_FAILED',
+  'PEP_INVESTOR', 'LARGE_TRANSACTION', 'RAPID_ROUND_TRIP', 'MANDATE_PENDING', 'PAYOUT_BANK_UNVERIFIED', 'CONTACT_MISSING', 'NOMINEE_MISSING',
 ];
 
 export const KindLabel: Record<ComplianceKind, string> = {
@@ -14,6 +17,17 @@ export const KindLabel: Record<ComplianceKind, string> = {
   PAID_NOT_ALLOTTED: 'Paid, not allotted',
   ORDER_STUCK: 'Order stuck',
   NOMINEE_MISSING: 'Nominee missing',
+  REDEMPTION_PAYOUT_PENDING: 'Redemption not paid out',
+  REFUND_PENDING: 'Refund pending',
+  CONSENT_MISSING: '2FA consent missing',
+  KYC_NOT_COMPLIANT: 'KYC no longer compliant',
+  PEP_INVESTOR: 'Politically exposed person',
+  LARGE_TRANSACTION: 'Large transaction',
+  RAPID_ROUND_TRIP: 'Quick buy and sell',
+  COMPLAINT_OVERDUE: 'Complaint overdue',
+  PAYOUT_BANK_UNVERIFIED: 'Payout bank unverified',
+  CONTACT_MISSING: 'Contact details missing',
+  MONITORING_STALE: 'Monitoring stopped',
 };
 
 /** What each check looks for, so a reviewer can tell why something is on the queue. */
@@ -26,6 +40,17 @@ export const KindRule: Record<ComplianceKind, string> = {
   PAID_NOT_ALLOTTED: 'A purchase whose payment succeeded over an hour ago but never moved on.',
   ORDER_STUCK: 'Confirmed a day ago and not submitted, or with the RTA for over 3 days.',
   NOMINEE_MISSING: 'Holdings with no nomination and no opt-out declaration on the account or its folios.',
+  REDEMPTION_PAYOUT_PENDING: 'A successful redemption with no payout (payment date or UTR) recorded after 5 days. SEBI: proceeds within 3 working days.',
+  REFUND_PENDING: 'A purchase that failed after its payment succeeded, with no completed refund after 3 days.',
+  CONSENT_MISSING: 'An order or plan past review with no SEBI 2FA consent recorded. Review: stays open until a person closes it.',
+  KYC_NOT_COMPLIANT: "An investor with an account whose latest KRA check no longer passes (high when they hold units).",
+  PEP_INVESTOR: 'A politically exposed person, or a relative of one: PMLA enhanced due diligence. Review: stays open until a person closes it.',
+  LARGE_TRANSACTION: 'A single purchase or redemption at or above the review threshold (₹10 lakh by default), last 90 days. Review alert.',
+  RAPID_ROUND_TRIP: 'Units redeemed within 30 days of buying the same scheme, last 90 days. Review alert.',
+  COMPLAINT_OVERDUE: 'A support ticket past its response deadline (high once open 21 days, the SEBI timeline).',
+  PAYOUT_BANK_UNVERIFIED: 'Holdings whose payout bank account is missing or has not passed verification.',
+  CONTACT_MISSING: 'Holdings with no communication email or mobile on the account.',
+  MONITORING_STALE: 'The data the other checks read has stopped updating, so they may be missing problems.',
 };
 
 export const SeverityLabel: Record<ComplianceSeverity, string> = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };

@@ -12,7 +12,7 @@ import { cn } from '@/utils/cn';
 const Initial: AlertFormState = { error: null };
 
 const ButtonClass = 'inline-flex h-8 items-center rounded-md border px-3 text-[13px] font-medium transition-colors disabled:opacity-50';
-const Primary = cn(ButtonClass, 'border-transparent bg-brand text-white hover:bg-brand-deep');
+const Primary = cn(ButtonClass, 'border-transparent bg-brand text-white hover:bg-brand-strong');
 const Secondary = cn(ButtonClass, 'border-line-strong bg-surface text-ink hover:bg-surface-sunken');
 const Danger = cn(ButtonClass, 'border-danger/30 bg-surface text-danger hover:bg-danger-soft');
 

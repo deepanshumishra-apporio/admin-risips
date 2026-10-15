@@ -16,8 +16,8 @@ export const StatusLabel: Record<TicketStatus, string> = {
 };
 
 export const StatusTone: Record<TicketStatus, BadgeTone> = {
-  OPEN: 'brand',
-  IN_PROGRESS: 'violet',
+  OPEN: 'violet',
+  IN_PROGRESS: 'brand',
   WAITING_ON_INVESTOR: 'warn',
   RESOLVED: 'success',
   CLOSED: 'neutral',
@@ -25,7 +25,7 @@ export const StatusTone: Record<TicketStatus, BadgeTone> = {
 
 export const PriorityLabel: Record<TicketPriority, string> = { URGENT: 'Urgent', HIGH: 'High', NORMAL: 'Normal', LOW: 'Low' };
 
-export const PriorityTone: Record<TicketPriority, BadgeTone> = { URGENT: 'danger', HIGH: 'warn', NORMAL: 'neutral', LOW: 'neutral' };
+export const PriorityTone: Record<TicketPriority, BadgeTone> = { URGENT: 'danger', HIGH: 'danger', NORMAL: 'neutral', LOW: 'neutral' };
 
 /** Resolution targets, mirrored from the API so the form can say what a priority commits to. */
 export const SlaHours: Record<TicketPriority, number> = { URGENT: 4, HIGH: 24, NORMAL: 48, LOW: 72 };

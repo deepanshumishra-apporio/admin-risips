@@ -52,7 +52,7 @@ export function PortfolioWizard({ initial = EmptyDraft, mode = 'create' }: Portf
           </p>
           <Link
             href="/model-portfolios"
-            className="mt-2 inline-flex h-9.5 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep"
+            className="mt-2 inline-flex h-9.5 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-strong"
           >
             Back to model portfolios
           </Link>

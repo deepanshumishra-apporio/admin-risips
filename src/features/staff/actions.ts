@@ -15,6 +15,9 @@ export type StaffFormState = {
   saved?: boolean;
 };
 
+// Staff ids go into API paths; anything else (e.g. `..`) would change the path.
+const Uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const text = (form: FormData, name: string): string => {
   const value = form.get(name);
   return typeof value === 'string' ? value.trim() : '';
@@ -55,6 +58,7 @@ export async function createStaff(_previous: StaffFormState, form: FormData): Pr
 
 export async function updateStaff(_previous: StaffFormState, form: FormData): Promise<StaffFormState> {
   const staffId = text(form, 'staffId');
+  if (!Uuid.test(staffId)) return { error: 'Unknown staff member.' };
   const fullName = text(form, 'fullName');
   if (!fullName) return { error: 'Name cannot be empty.' };
   const includeRoles = form.get('includeRoles') === 'true';
@@ -87,6 +91,7 @@ export type StaffCommand = keyof typeof Commands;
 
 export async function runStaffCommand(_previous: StaffFormState, form: FormData): Promise<StaffFormState> {
   const staffId = text(form, 'staffId');
+  if (!Uuid.test(staffId)) return { error: 'Unknown staff member.' };
   const command = text(form, 'command') as StaffCommand;
   const spec = Commands[command];
   if (!spec) return { error: 'Unknown action.' };

@@ -71,7 +71,7 @@ export function ReportFiltersBar({ report, filters }: { report: ReportDefinition
 
         <button
           type="submit"
-          className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-deep"
+          className="h-9 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-strong"
         >
           Apply
         </button>

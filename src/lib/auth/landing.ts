@@ -10,7 +10,6 @@ const Landing: { permission: Permission; href: string }[] = [
   { permission: 'reports.read', href: '/reports' },
   { permission: 'announcements.manage', href: '/announcements' },
   { permission: 'portfolios.manage', href: '/model-portfolios' },
-  { permission: 'meetings.manage', href: '/review-meetings' },
   { permission: 'staff.manage', href: '/staff' },
   { permission: 'roles.manage', href: '/staff/roles' },
 ];

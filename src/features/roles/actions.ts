@@ -9,6 +9,9 @@ import type { Permission, Role } from '@/types/admin-api.types';
 
 export type RoleFormState = { error: string | null; saved?: boolean };
 
+// Role keys go into API paths; the API only ever issues A–Z and underscores.
+const RoleKey = /^[A-Z][A-Z_]{0,39}$/;
+
 const text = (form: FormData, name: string): string => {
   const value = form.get(name);
   return typeof value === 'string' ? value.trim() : '';
@@ -48,6 +51,7 @@ export async function createRole(_previous: RoleFormState, form: FormData): Prom
 
 export async function updateRole(_previous: RoleFormState, form: FormData): Promise<RoleFormState> {
   const key = text(form, 'key');
+  if (!RoleKey.test(key)) return { error: 'Unknown role.' };
   const name = text(form, 'name');
   const granted = permissions(form);
   const system = form.get('system') === 'true';
@@ -69,6 +73,7 @@ export async function updateRole(_previous: RoleFormState, form: FormData): Prom
 
 export async function deleteRole(_previous: RoleFormState, form: FormData): Promise<RoleFormState> {
   const key = text(form, 'key');
+  if (!RoleKey.test(key)) return { error: 'Unknown role.' };
   try {
     await authedRequest(`/roles/${encodeURIComponent(key)}`, { method: 'DELETE' });
   } catch (error) {

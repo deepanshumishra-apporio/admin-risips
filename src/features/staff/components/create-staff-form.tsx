@@ -23,7 +23,7 @@ export function CreateStaffForm({ roles, actorLevel }: { roles: Role[]; actorLev
         <div className="flex gap-3">
           <Link
             href={`/staff/${state.staffId}`}
-            className="inline-flex h-9.5 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep"
+            className="inline-flex h-9.5 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-strong"
           >
             Open their account
           </Link>

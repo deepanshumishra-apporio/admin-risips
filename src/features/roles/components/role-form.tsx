@@ -42,7 +42,7 @@ function SaveButton({ label, disabled }: { label: string; disabled: boolean }): 
     <button
       type="submit"
       disabled={disabled || pending}
-      className="inline-flex h-9 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex h-9 items-center rounded-md bg-brand px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
     >
       {pending ? 'Saving…' : label}
     </button>

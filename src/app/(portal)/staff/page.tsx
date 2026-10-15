@@ -38,7 +38,7 @@ export default async function StaffPage(): Promise<React.JSX.Element> {
         actions={
           <Link
             href="/staff/new"
-            className="inline-flex h-9.5 items-center gap-2 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-deep"
+            className="inline-flex h-9.5 items-center gap-2 rounded-md bg-brand px-4 text-[13.5px] font-medium text-white hover:bg-brand-strong"
           >
             <UserPlus className="size-4" />
             Add staff member

@@ -4,6 +4,7 @@ import { ChevronDown, KeyRound, LogOut, Settings, ShieldCheck } from 'lucide-rea
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { ThemeChooser } from '@/components/layout/theme-switcher';
 import { Avatar } from '@/components/ui/avatar';
 import { signOut } from '@/features/auth/actions';
 import { cn } from '@/utils/cn';
@@ -73,6 +74,11 @@ export function AccountMenu({ account }: { account: Account }): React.JSX.Elemen
                 </li>
               ))}
             </ul>
+
+            <div className="border-t border-line px-3 py-2.5">
+              <p className="mb-1.5 text-[11px] font-semibold tracking-[0.06em] text-ink-muted uppercase">Theme</p>
+              <ThemeChooser />
+            </div>
 
             <div className="border-t border-line py-1">
               <form action={signOut}>

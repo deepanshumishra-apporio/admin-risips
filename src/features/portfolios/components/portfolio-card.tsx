@@ -85,7 +85,7 @@ export function PortfolioCard({ portfolio, onPublish, onDelete }: PortfolioCardP
           <button
             type="button"
             onClick={() => onPublish(portfolio.id)}
-            className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md bg-brand text-[13px] font-medium text-white hover:bg-brand-deep"
+            className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md bg-brand text-[13px] font-medium text-white hover:bg-brand-strong"
           >
             <Rocket className="size-3.5" />
             Publish

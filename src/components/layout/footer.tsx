@@ -9,7 +9,7 @@ const Links = [
 
 export function Footer(): React.JSX.Element {
   return (
-    <footer className="mt-auto border-t border-line bg-surface">
+    <footer className="mt-auto border-t border-line bg-chrome">
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-4">
         {Links.map((link) => (
           <button

@@ -5,13 +5,22 @@
  * app draws its mark in (see mobile-app/scripts/generate-icons.mjs), so the
  * portal and the investor app read as one product.
  *
- * The shell is a light chrome: white sidebar and content separated by hairline
- * borders, with fills reserved for state rather than decoration.
+ * Two themes on one layout, from the design file: light (white cards on a pale
+ * page) and dark (navy cards on near-black). The sidebar is navy in both — it
+ * opts into the dark values with `.theme-dark`, as does the sign-in screen,
+ * which is always dark.
+ *
+ * The theme is chosen in the account menu and kept in a cookie; with none set
+ * it follows the operating system. The root layout puts the choice on <html> as
+ * `data-theme`, so the first paint is already right.
  */
 @theme {
-  --color-canvas: #ffffff;
+  /* The page behind the cards. */
+  --color-canvas: #f6f8fb;
+  /* The top bar and footer: white on the light page, the page itself on dark. */
+  --color-chrome: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f6f8fa;
+  --color-surface-sunken: #f3f6f9;
   --color-line: #e3e7ed;
   --color-line-strong: #d0d7e0;
 
@@ -20,11 +29,13 @@
   --color-ink-muted: #6b7787;
 
   --color-brand: #0a71da;
+  /* Text and icons on a brand tint. */
   --color-brand-deep: #0160c2;
+  /* A filled brand control on hover (white text stays readable on it). */
+  --color-brand-strong: #0160c2;
   --color-brand-soft: #eaf3fd;
   --color-navy: #020b1b;
   --color-navy-soft: #0d1b30;
-
 
   --color-success: #12a150;
   --color-success-soft: #e7f7ee;
@@ -44,6 +55,80 @@
   /* Shell metrics — the sidebar rail and the header share one grid. */
   --shell-header: 60px;
   --shell-sidebar: 252px;
+}
+
+/*
+ * The dark values. Written twice because CSS cannot share a block between a
+ * selector and a media query: once for an explicit choice (and the always-dark
+ * regions), once for "follow the system" with no choice made.
+ */
+[data-theme='dark'],
+.theme-dark {
+  color-scheme: dark;
+  --color-canvas: #020b1b;
+  --color-chrome: #020b1b;
+  --color-surface: #0a162d;
+  --color-surface-sunken: #13213b;
+  --color-line: #1b2842;
+  --color-line-strong: #2a3854;
+
+  --color-ink: #e8eef7;
+  --color-ink-soft: #b3bfd1;
+  --color-ink-muted: #8492aa;
+
+  --color-brand: #3584e4;
+  --color-brand-deep: #8dbdf7;
+  --color-brand-strong: #2471d2;
+  --color-brand-soft: #3584e42b;
+
+  --color-success: #37c47c;
+  --color-success-soft: #37c47c24;
+  --color-warn: #e9b44c;
+  --color-warn-soft: #e9b44c24;
+  --color-danger: #f26d6d;
+  --color-danger-soft: #f26d6d24;
+  --color-violet: #a78bfa;
+  --color-violet-soft: #a78bfa26;
+  --color-teal: #2dd4bf;
+  --color-amber: #fbbf24;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-canvas: #020b1b;
+    --color-chrome: #020b1b;
+    --color-surface: #0a162d;
+    --color-surface-sunken: #13213b;
+    --color-line: #1b2842;
+    --color-line-strong: #2a3854;
+
+    --color-ink: #e8eef7;
+    --color-ink-soft: #b3bfd1;
+    --color-ink-muted: #8492aa;
+
+    --color-brand: #3584e4;
+    --color-brand-deep: #8dbdf7;
+    --color-brand-strong: #2471d2;
+    --color-brand-soft: #3584e42b;
+
+    --color-success: #37c47c;
+    --color-success-soft: #37c47c24;
+    --color-warn: #e9b44c;
+    --color-warn-soft: #e9b44c24;
+    --color-danger: #f26d6d;
+    --color-danger-soft: #f26d6d24;
+    --color-violet: #a78bfa;
+    --color-violet-soft: #a78bfa26;
+    --color-teal: #2dd4bf;
+    --color-amber: #fbbf24;
+  }
+}
+
+/* An explicit light choice keeps native controls (scrollbars, date pickers)
+   light on a dark operating system. */
+[data-theme='light'] {
+  color-scheme: light;
 }
 
 @layer base {

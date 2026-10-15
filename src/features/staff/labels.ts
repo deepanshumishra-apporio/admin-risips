@@ -19,7 +19,8 @@ export const PermissionLabel: Record<Permission, string> = {
 export const PermissionGroups: { title: string; permissions: Permission[] }[] = [
   { title: 'Observe', permissions: ['dashboard.read', 'transactions.read', 'compliance.manage', 'reports.read'] },
   { title: 'Investors', permissions: ['investors.read'] },
-  { title: 'Advisory', permissions: ['portfolios.manage', 'meetings.manage'] },
+  // `meetings.manage` is left out while review meetings are parked for a later release.
+  { title: 'Advisory', permissions: ['portfolios.manage'] },
   { title: 'Engagement & support', permissions: ['announcements.manage', 'support.manage'] },
   { title: 'Administration', permissions: ['staff.manage', 'roles.manage'] },
 ];

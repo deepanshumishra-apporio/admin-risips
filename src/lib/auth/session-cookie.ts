@@ -20,18 +20,26 @@ export async function readSessionToken(): Promise<string | null> {
   return (await cookies()).get(SessionCookieName)?.value ?? null;
 }
 
+/** The attributes the cookie is written with — a deletion must repeat them. */
+export function sessionCookieAttributes() {
+  return { httpOnly: true, secure: Config.secureCookies, sameSite: 'strict' as const, path: '/' };
+}
+
 /** Only callable from a server action or route handler. */
 export async function writeSessionToken(token: string, expiresAt: string): Promise<void> {
   (await cookies()).set(SessionCookieName, token, {
-    httpOnly: true,
-    secure: Config.secureCookies,
-    sameSite: 'strict',
-    path: '/',
+    ...sessionCookieAttributes(),
     expires: new Date(expiresAt),
   });
 }
 
-/** Only callable from a server action or route handler. */
+/**
+ * Only callable from a server action or route handler.
+ *
+ * Expired by re-setting it with the same attributes, not `cookies().delete()`:
+ * that emits no `Secure`, and a browser ignores any `__Host-` Set-Cookie
+ * without it — so in production sign-out left the session cookie in place.
+ */
 export async function clearSessionToken(): Promise<void> {
-  (await cookies()).delete(SessionCookieName);
+  (await cookies()).set(SessionCookieName, '', { ...sessionCookieAttributes(), maxAge: 0 });
 }

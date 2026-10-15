@@ -8,6 +8,8 @@ import type {
   InvestorItemType,
   InvestorList,
   InvestorListQuery,
+  InvestorOverview,
+  NudgeResult,
   SignupBucket,
   SignupSeries,
 } from '@/types/admin-api.types';
@@ -28,10 +30,21 @@ export function listInvestors(query: InvestorListQuery): Promise<InvestorList> {
       kycStatus: query.kycStatus,
       kycStalled: query.kycStalled ? 'true' : undefined,
       sipDueDays: query.sipDueDays,
+      attention: query.attention,
       cursor: query.cursor,
       limit: query.limit,
     },
   });
+}
+
+/** The stage counts and the counts behind the list's quick filters. */
+export function getInvestorOverview(): Promise<InvestorOverview> {
+  return authedRequest('/investors/overview');
+}
+
+/** A reminder notification to each investor, worded for their stage. */
+export function nudgeInvestors(userIds: string[]): Promise<NudgeResult> {
+  return authedRequest('/investors/nudge', { method: 'POST', body: { userIds } });
 }
 
 export function getInvestor(userId: string): Promise<InvestorDetail> {

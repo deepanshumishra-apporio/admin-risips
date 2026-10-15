@@ -3,7 +3,6 @@ import {
   Bell,
   Bot,
   Boxes,
-  CalendarCheck,
   FileBarChart,
   LayoutDashboard,
   Layers,
@@ -57,7 +56,7 @@ export const NavSections: NavSection[] = [
     items: [
       { label: 'Buckets', href: '/buckets', icon: Boxes, soon: true },
       { label: 'Model Portfolios', href: '/model-portfolios', icon: Layers, permission: 'portfolios.manage' },
-      { label: 'Review Meetings', href: '/review-meetings', icon: CalendarCheck, permission: 'meetings.manage' },
+      // Review Meetings is parked for a later release (src/features/meetings). Not shown.
     ],
   },
   {

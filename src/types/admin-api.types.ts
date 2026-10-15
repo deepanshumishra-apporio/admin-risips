@@ -133,12 +133,41 @@ export type InvestorList = {
   nextCursor: string | null;
 };
 
+/** KYC: blocked in KYC. SETUP: KYC done but the account is not ready to transact. */
+export const InvestorAttentions = ['KYC', 'SETUP'] as const;
+export type InvestorAttention = (typeof InvestorAttentions)[number];
+
+export type InvestorOverview = {
+  total: number;
+  byStage: Record<JourneyStage, number>;
+  kycPending: number;
+  kycStalled: number;
+  attention: Record<InvestorAttention, number>;
+  /** Null when it could not be counted (an older API, without the dashboard permission). */
+  activeSips: number | null;
+  sipDueIn7Days: number;
+  /**
+   * Counted by the admin from list totals, because the API predates the
+   * overview. Its list cannot filter by "needs attention" either, so those
+   * links go to the whole stage instead.
+   */
+  countedFromList?: boolean;
+};
+
+export type NudgeResult = {
+  sent: number;
+  skippedInvested: number;
+  skippedOptedOut: number;
+  skippedRecent: number;
+};
+
 export type InvestorListQuery = {
   search?: string;
   stage?: JourneyStage[];
   kycStatus?: KycStatus[];
   kycStalled?: boolean;
   sipDueDays?: number;
+  attention?: InvestorAttention;
   cursor?: string;
   limit?: number;
 };
@@ -668,7 +697,18 @@ export type ComplianceKind =
   | 'MANDATE_PENDING'
   | 'PAID_NOT_ALLOTTED'
   | 'ORDER_STUCK'
-  | 'NOMINEE_MISSING';
+  | 'NOMINEE_MISSING'
+  | 'REDEMPTION_PAYOUT_PENDING'
+  | 'REFUND_PENDING'
+  | 'CONSENT_MISSING'
+  | 'KYC_NOT_COMPLIANT'
+  | 'PEP_INVESTOR'
+  | 'LARGE_TRANSACTION'
+  | 'RAPID_ROUND_TRIP'
+  | 'COMPLAINT_OVERDUE'
+  | 'PAYOUT_BANK_UNVERIFIED'
+  | 'CONTACT_MISSING'
+  | 'MONITORING_STALE';
 export type ComplianceSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
 export type ComplianceStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
 
@@ -680,7 +720,7 @@ export type ComplianceAlertItem = {
   title: string;
   detail: string;
   investor: SupportInvestor | null;
-  entity: { type: 'order' | 'plan' | 'mandate' | 'account'; id: string } | null;
+  entity: { type: 'order' | 'plan' | 'mandate' | 'account' | 'ticket'; id: string } | null;
   assignee: StaffRef | null;
   firstDetectedAt: string;
   lastDetectedAt: string;
@@ -795,3 +835,33 @@ export type AnnouncementList = {
 };
 
 export type AudienceReach = { matched: number; optedOut: number; reachable: number };
+
+// --- review meetings -----------------------------------------------------------------
+
+export type MeetingMode = 'IN_PERSON' | 'VIDEO' | 'PHONE';
+export type RiskProfile = 'CONSERVATIVE' | 'MODERATE' | 'AGGRESSIVE';
+export type MeetingStatus = 'SCHEDULED' | 'CAPTURED' | 'PROFILE_UPDATED';
+
+export type ReviewMeetingItem = {
+  id: string;
+  investor: SupportInvestor;
+  conductedBy: StaffRef;
+  recordedBy: StaffRef;
+  mode: MeetingMode;
+  /** yyyy-mm-dd */
+  meetingDate: string;
+  currentProfile: RiskProfile;
+  recommendedProfile: RiskProfile;
+  status: MeetingStatus;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReviewMeetingList = {
+  items: ReviewMeetingItem[];
+  nextCursor: string | null;
+  counts: Record<MeetingStatus, number>;
+};
+
+export type MeetingInvestorOption = { id: string; name: string | null; phone: string | null };

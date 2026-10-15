@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: 'Compliance alert · RiSips Admin' };
 
 type AlertPageProps = { params: Promise<{ id: string }> };
 
-const EntityLabel = { order: 'Order', plan: 'SIP / plan', mandate: 'AutoPay mandate', account: 'Investment account' } as const;
+const EntityLabel = { order: 'Order', plan: 'SIP / plan', mandate: 'AutoPay mandate', account: 'Investment account', ticket: 'Support ticket' } as const;
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
@@ -137,6 +137,11 @@ export default async function ComplianceAlertPage({ params }: AlertPageProps): P
               {alert.entity?.type === 'order' ? (
                 <Link href={`/transactions?q=${encodeURIComponent(alert.investor?.name ?? '')}`} className="mt-3 inline-block text-[13px] font-medium text-brand hover:text-brand-deep">
                   See this investor&apos;s orders in Transactions
+                </Link>
+              ) : null}
+              {alert.entity?.type === 'ticket' ? (
+                <Link href={`/support/${alert.entity.id}`} className="mt-3 inline-block text-[13px] font-medium text-brand hover:text-brand-deep">
+                  Open the ticket
                 </Link>
               ) : null}
             </CardBody>

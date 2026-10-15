@@ -11,7 +11,7 @@ export function SubmitButton({ children }: { children: React.ReactNode }): React
     <button
       type="submit"
       disabled={pending}
-      className="flex h-10.5 w-full items-center justify-center gap-2 rounded-md bg-brand text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-wait disabled:opacity-70"
+      className="flex h-10.5 w-full items-center justify-center gap-2 rounded-md bg-brand text-[14px] font-semibold text-white transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-70"
     >
       {children}
       {pending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}

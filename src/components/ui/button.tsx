@@ -8,7 +8,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md';
 
 const VariantClass: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-deep border-transparent',
+  primary: 'bg-brand text-white hover:bg-brand-strong border-transparent',
   secondary: 'bg-surface text-ink hover:bg-surface-sunken border-line-strong',
   ghost: 'bg-transparent text-ink-soft hover:bg-surface-sunken border-transparent',
   danger: 'bg-surface text-danger hover:bg-danger-soft border-danger/30',

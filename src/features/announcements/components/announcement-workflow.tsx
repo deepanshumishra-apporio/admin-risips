@@ -13,7 +13,7 @@ import { cn } from '@/utils/cn';
 const Initial: TransitionState = { error: null };
 
 const Base = 'inline-flex h-8 items-center rounded-md border px-3 text-[13px] font-medium transition-colors disabled:opacity-50';
-const Primary = cn(Base, 'border-transparent bg-brand text-white hover:bg-brand-deep');
+const Primary = cn(Base, 'border-transparent bg-brand text-white hover:bg-brand-strong');
 const Secondary = cn(Base, 'border-line-strong bg-surface text-ink hover:bg-surface-sunken');
 const Danger = cn(Base, 'border-danger/30 bg-surface text-danger hover:bg-danger-soft');
 
