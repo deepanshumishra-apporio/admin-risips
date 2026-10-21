@@ -4,6 +4,7 @@ import { parseInvestorFilters, toFilterQuery, type InvestorFilters } from '@/fea
 import { apiDownload } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import { readSessionToken } from '@/lib/auth/session-cookie';
+import { redirectTo } from '@/lib/redirect';
 
 /** Why an export came back without a file, for the message on the list. */
 export type ExportFailure = 'failed' | 'forbidden' | 'unavailable';
@@ -39,23 +40,22 @@ function csv(upstream: Response): NextResponse {
  */
 export async function GET(request: NextRequest): Promise<Response> {
   const token = await readSessionToken();
-  if (!token) return NextResponse.redirect(new URL('/signin', request.url));
+  if (!token) return redirectTo('/signin');
 
   const filters = parseInvestorFilters(Object.fromEntries(request.nextUrl.searchParams));
   const query = toFilterQuery(filters);
 
   const back = (reason: ExportFailure): NextResponse => {
-    const url = new URL('/investors', request.url);
-    request.nextUrl.searchParams.forEach((value, name) => url.searchParams.set(name, value));
-    url.searchParams.set('exportFailed', reason);
-    return NextResponse.redirect(url);
+    const params = new URLSearchParams(request.nextUrl.searchParams);
+    params.set('exportFailed', reason);
+    return redirectTo('/investors', params);
   };
 
   const session = (error: unknown): NextResponse | null => {
     if (!(error instanceof ApiError)) return null;
-    if (error.isUnauthenticated) return NextResponse.redirect(new URL('/auth/expired', request.url));
-    if (error.code === 'MFA_REQUIRED') return NextResponse.redirect(new URL('/signin/mfa', request.url));
-    if (error.code === 'PASSWORD_CHANGE_REQUIRED') return NextResponse.redirect(new URL('/signin/password', request.url));
+    if (error.isUnauthenticated) return redirectTo('/auth/expired');
+    if (error.code === 'MFA_REQUIRED') return redirectTo('/signin/mfa');
+    if (error.code === 'PASSWORD_CHANGE_REQUIRED') return redirectTo('/signin/password');
     return null;
   };
 

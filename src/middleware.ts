@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { middlewareRedirect } from '@/lib/redirect';
+
 /**
  * A fast first gate: no session cookie, no portal. It only checks presence —
  * the edge cannot validate a token — so every page still verifies the session
@@ -15,10 +17,8 @@ export function middleware(request: NextRequest): NextResponse {
   const signedIn = Boolean(request.cookies.get(SessionCookie)?.value);
   if (signedIn) return NextResponse.next();
 
-  const target = new URL('/signin', request.url);
   const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  if (next !== '/') target.searchParams.set('next', next);
-  return NextResponse.redirect(target);
+  return middlewareRedirect(request, '/signin', next === '/' ? undefined : { next });
 }
 
 export const config = {

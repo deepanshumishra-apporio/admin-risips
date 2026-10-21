@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { apiRequest } from '@/lib/api/client';
 import { SessionCookieName, sessionCookieAttributes } from '@/lib/auth/session-cookie';
+import { redirectTo } from '@/lib/redirect';
 
 /**
  * Where a server component sends a dead session. Components cannot write
@@ -14,9 +15,7 @@ import { SessionCookieName, sessionCookieAttributes } from '@/lib/auth/session-c
  * session is also revoked on the API, not just forgotten by this browser.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const target = new URL('/signin', request.url);
-  target.searchParams.set('reason', request.nextUrl.searchParams.get('reason') === 'mfa' ? 'mfa' : 'expired');
-  const response = NextResponse.redirect(target);
+  const response = redirectTo('/signin', { reason: request.nextUrl.searchParams.get('reason') === 'mfa' ? 'mfa' : 'expired' });
 
   const token = request.cookies.get(SessionCookieName)?.value;
   if (token) {

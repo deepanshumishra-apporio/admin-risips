@@ -4,6 +4,7 @@ import { isReportKey } from '@/features/reports/labels';
 import { apiDownload } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import { readSessionToken } from '@/lib/auth/session-cookie';
+import { redirectTo } from '@/lib/redirect';
 
 const Forwarded = ['from', 'to', 'status'] as const;
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!isReportKey(key)) return new NextResponse('Not found', { status: 404 });
 
   const token = await readSessionToken();
-  if (!token) return NextResponse.redirect(new URL('/signin', request.url));
+  if (!token) return redirectTo('/signin');
 
   const query: Record<string, string> = {};
   for (const name of Forwarded) {
@@ -38,14 +39,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     if (error instanceof ApiError) {
-      if (error.isUnauthenticated) return NextResponse.redirect(new URL('/auth/expired', request.url));
-      if (error.code === 'MFA_REQUIRED') return NextResponse.redirect(new URL('/signin/mfa', request.url));
-      if (error.code === 'PASSWORD_CHANGE_REQUIRED') return NextResponse.redirect(new URL('/signin/password', request.url));
+      if (error.isUnauthenticated) return redirectTo('/auth/expired');
+      if (error.code === 'MFA_REQUIRED') return redirectTo('/signin/mfa');
+      if (error.code === 'PASSWORD_CHANGE_REQUIRED') return redirectTo('/signin/password');
     }
     console.error('[reports] export failed', key, error);
-    const back = new URL(`/reports/${key}`, request.url);
-    for (const [name, value] of Object.entries(query)) back.searchParams.set(name, value);
-    back.searchParams.set('failed', '1');
-    return NextResponse.redirect(back);
+    return redirectTo(`/reports/${key}`, { ...query, failed: '1' });
   }
 }
