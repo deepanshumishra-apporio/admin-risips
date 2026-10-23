@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, Td } from '@/components/ui/table';
 import { ItemPanelProvider, ItemRow } from '@/features/investors/components/item-panel/item-panel';
-import { stateTone } from '@/features/investors/money-labels';
+import { allUnitsText, stateTone } from '@/features/investors/money-labels';
 import { refreshOrder } from '@/features/transactions/actions';
 import { FlagHint, FlagLabel, FlagTone, OrderStateLabel, OrderTypeLabel } from '@/features/transactions/labels';
 import type { MonitoredOrder } from '@/types/admin-api.types';
@@ -110,7 +110,10 @@ export function TransactionTable({ orders }: { orders: MonitoredOrder[] }): Reac
                 ) : null}
               </Td>
               <Td className="tabular whitespace-nowrap">
-                <span className="block text-ink">{exact(order.amount, order.units)}</span>
+                <span className="block text-ink">{allUnitsText(order) ?? exact(order.amount, order.units)}</span>
+                {order.processedAmount ? (
+                  <span className="block text-[11.5px] text-ink-muted">Processed {exact(order.processedAmount, null)}</span>
+                ) : null}
                 {order.payment ? (
                   <span className="block text-[11.5px] text-ink-muted">Payment {humanize(order.payment.status).toLowerCase()}</span>
                 ) : null}

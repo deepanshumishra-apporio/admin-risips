@@ -1,5 +1,6 @@
 import type { BadgeTone } from '@/components/ui/badge';
 import type { OrderKind, OrderSource, PlanKind } from '@/types/admin-api.types';
+import { formatInrString } from '@/utils/format';
 
 export const PlanKindLabel: Record<PlanKind, string> = {
   SIP: 'SIP',
@@ -25,6 +26,12 @@ export const OrderSourceLabel: Record<OrderSource, string> = {
   SWP: 'SWP instalment',
   STP: 'STP instalment',
 };
+
+/** "All units (≈ ₹99.37)" for a whole-holding redemption or switch, else null. The estimate is gone once allotted. */
+export function allUnitsText(order: { allUnits?: boolean; estimatedAmount?: string | null }): string | null {
+  if (!order.allUnits) return null;
+  return order.estimatedAmount ? `All units (≈ ${formatInrString(order.estimatedAmount, { compact: false })})` : 'All units';
+}
 
 /** One colour rule for plan, order and payment states, so the same word always looks the same. */
 export function stateTone(state: string): BadgeTone {

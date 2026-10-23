@@ -339,6 +339,10 @@ export type Order = {
   units: string | null;
   processedAmount: string | null;
   processedUnits: string | null;
+  /** True when the investor redeemed or switched their whole holding; amount and units are null then. */
+  allUnits?: boolean;
+  /** Open all-units orders only: units held × latest NAV. */
+  estimatedAmount?: string | null;
   price: string | null;
   folioNumber: string | null;
   state: string;
@@ -532,6 +536,10 @@ export type MonitoredOrder = {
   folio: string | null;
   amount: string | null;
   units: string | null;
+  allUnits?: boolean;
+  estimatedAmount?: string | null;
+  processedAmount?: string | null;
+  processedUnits?: string | null;
   state: MonitorOrderState;
   gateway: string;
   payment: { status: string; at: string | null } | null;

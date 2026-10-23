@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Table, Td } from '@/components/ui/table';
 import { ItemRow } from '@/features/investors/components/item-panel/item-panel';
-import { OrderKindLabel, OrderSourceLabel, stateTone } from '@/features/investors/money-labels';
+import { allUnitsText, OrderKindLabel, OrderSourceLabel, stateTone } from '@/features/investors/money-labels';
 import type { InvestorItemType, Order, OrderKind } from '@/types/admin-api.types';
 
 const OrderItemType: Record<OrderKind, InvestorItemType> = { PURCHASE: 'purchase', REDEMPTION: 'redemption', SWITCH: 'switch' };
@@ -27,7 +27,9 @@ const unitsText = (value: string | null): string | null =>
 
 /** Requested vs what the RTA actually did — they differ by stamp duty, NAV and partial fills. */
 function Amounts({ order }: { order: Order }): React.JSX.Element {
-  const requested = order.amount ? formatInrString(order.amount, { compact: false }) : unitsText(order.units) ?? '—';
+  const requested = order.amount
+    ? formatInrString(order.amount, { compact: false })
+    : allUnitsText(order) ?? unitsText(order.units) ?? '—';
   const processed = order.processedAmount
     ? formatInrString(order.processedAmount, { compact: false })
     : unitsText(order.processedUnits);

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { OrderKindLabel, OrderSourceLabel, stateTone } from '@/features/investors/money-labels';
+import { allUnitsText, OrderKindLabel, OrderSourceLabel, stateTone } from '@/features/investors/money-labels';
 import type {
   HoldingDetail,
   InvestorItem,
@@ -113,7 +113,7 @@ function OrderList({ orders, onOpen, empty }: { orders: Order[]; onOpen: Open; e
               </span>
             </span>
             <span className="tabular text-right text-[13px] font-semibold text-ink">
-              {inr(order.processedAmount ?? order.amount) ?? units(order.units) ?? '—'}
+              {inr(order.processedAmount ?? order.amount) ?? allUnitsText(order) ?? units(order.units) ?? '—'}
             </span>
             <Badge tone={stateTone(order.state)}>{humanize(order.state)}</Badge>
             <ChevronRight className="size-4 shrink-0 text-ink-muted" />
@@ -304,7 +304,7 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-3 gap-2.5">
-        <Headline label="Requested" value={inr(order.amount) ?? units(order.units) ?? '—'} />
+        <Headline label="Requested" value={inr(order.amount) ?? allUnitsText(order) ?? units(order.units) ?? '—'} />
         <Headline label={verb} value={inr(order.processedAmount) ?? units(order.processedUnits) ?? '—'} sub={order.processedAmount ? units(order.processedUnits) : null} />
         <Headline label="NAV" value={nav(order.price) ?? '—'} sub={date(order.navDate)} />
       </div>
