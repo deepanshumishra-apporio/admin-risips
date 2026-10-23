@@ -16,8 +16,12 @@ import { formatDateTime, humanize, timeAgo } from '@/utils/format';
 
 const Headers = ['Placed', 'Investor', 'Order', 'Amount', 'State', 'Needs', ''] as const;
 
-const exact = (amount: string | null): string =>
-  amount === null ? '—' : `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Rupees when the order has an amount, else units (switches and redemptions can be placed by units). */
+const exact = (amount: string | null, units: string | null): string => {
+  if (amount !== null) return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (units !== null) return `${Number(units).toLocaleString('en-IN', { maximumFractionDigits: 4 })} units`;
+  return '—';
+};
 
 /** Asks FP for the order's current state. It changes nothing at FP; it only brings our copy up to date. */
 function RefreshButton({ order, onRefreshed }: { order: MonitoredOrder; onRefreshed: (order: MonitoredOrder) => void }): React.JSX.Element {
@@ -98,11 +102,15 @@ export function TransactionTable({ orders }: { orders: MonitoredOrder[] }): Reac
                 <span className="block text-[13px] font-medium text-ink">{OrderTypeLabel[order.type]}</span>
                 <span className="block max-w-[300px] truncate text-[12px] text-ink-muted" title={order.scheme}>
                   {order.scheme}
-                  {order.toScheme ? ` → ${order.toScheme}` : ''}
                 </span>
+                {order.toScheme ? (
+                  <span className="block max-w-[300px] truncate text-[12px] text-ink-muted" title={order.toScheme}>
+                    → {order.toScheme}
+                  </span>
+                ) : null}
               </Td>
               <Td className="tabular whitespace-nowrap">
-                <span className="block text-ink">{exact(order.amount)}</span>
+                <span className="block text-ink">{exact(order.amount, order.units)}</span>
                 {order.payment ? (
                   <span className="block text-[11.5px] text-ink-muted">Payment {humanize(order.payment.status).toLowerCase()}</span>
                 ) : null}
