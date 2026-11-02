@@ -4,7 +4,7 @@ import type { ComplianceKind, ComplianceListQuery, ComplianceSeverity, Complianc
 /** Filter order: money and monitoring first, then 2FA and KYC, then AML review, then hygiene. */
 export const ComplianceKinds: readonly ComplianceKind[] = [
   'MONITORING_STALE', 'PAID_NOT_ALLOTTED', 'REDEMPTION_PAYOUT_PENDING', 'REFUND_PENDING', 'CONSENT_MISSING',
-  'MANDATE_REJECTED', 'SIP_FAILURES', 'ORDER_STUCK', 'COMPLAINT_OVERDUE', 'KYC_NOT_COMPLIANT', 'KYC_STALLED', 'KYC_FAILED',
+  'MANDATE_REJECTED', 'SIP_FAILURES', 'ORDER_STUCK', 'COMPLAINT_OVERDUE', 'KYC_NOT_COMPLIANT', 'KYC_STALLED', 'KYC_FAILED', 'FATCA_REJECTED',
   'PEP_INVESTOR', 'LARGE_TRANSACTION', 'RAPID_ROUND_TRIP', 'MANDATE_PENDING', 'PAYOUT_BANK_UNVERIFIED', 'CONTACT_MISSING', 'NOMINEE_MISSING',
 ];
 
@@ -28,6 +28,7 @@ export const KindLabel: Record<ComplianceKind, string> = {
   PAYOUT_BANK_UNVERIFIED: 'Payout bank unverified',
   CONTACT_MISSING: 'Contact details missing',
   MONITORING_STALE: 'Monitoring stopped',
+  FATCA_REJECTED: 'FATCA rejected',
 };
 
 /** What each check looks for, so a reviewer can tell why something is on the queue. */
@@ -51,6 +52,7 @@ export const KindRule: Record<ComplianceKind, string> = {
   PAYOUT_BANK_UNVERIFIED: 'Holdings whose payout bank account is missing or has not passed verification.',
   CONTACT_MISSING: 'Holdings with no communication email or mobile on the account.',
   MONITORING_STALE: 'The data the other checks read has stopped updating, so they may be missing problems.',
+  FATCA_REJECTED: 'CAMS or KFin rejected the FATCA declaration NSE passed on (for a HUF, usually the missing karta UBO details). Allotments can be held up.',
 };
 
 export const SeverityLabel: Record<ComplianceSeverity, string> = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };

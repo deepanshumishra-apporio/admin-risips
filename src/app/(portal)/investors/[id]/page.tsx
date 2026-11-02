@@ -11,6 +11,7 @@ import { StatStrip } from '@/components/ui/stat-strip';
 import { AccountsPanel } from '@/features/investors/components/detail/accounts-panel';
 import { ContactCard } from '@/features/investors/components/detail/contact-card';
 import { HoldingsPanel } from '@/features/investors/components/detail/holdings-panel';
+import { HufPanel } from '@/features/investors/components/detail/huf-panel';
 import { ItemPanelProvider } from '@/features/investors/components/item-panel/item-panel';
 import { KycPanel } from '@/features/investors/components/detail/kyc-panel';
 import { OrdersPanel } from '@/features/investors/components/detail/orders-panel';
@@ -57,6 +58,8 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
   const { portfolio, plans, summary: money } = investments;
   const gainPercent = Number(portfolio.investedValue) > 0 ? Number(portfolio.gainPercent ?? 0) : null;
   const liveCount = (list: Plan[]): number | undefined => list.filter((plan) => isLivePlan(plan.state)).length || undefined;
+  const huf = detail.huf ?? null;
+  const nse = detail.nse ?? null;
 
   return (
     <>
@@ -70,6 +73,7 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
         description={`Active ${timeAgo(summary.lastActivityAt)}`}
         actions={
           <>
+            {summary.accountType === 'HUF' ? <Badge tone="violet">HUF</Badge> : null}
             <Badge tone={JourneyStageTone[summary.stage]} dot>
               {StageLabel[summary.stage]}
             </Badge>
@@ -141,6 +145,7 @@ export default async function InvestorPage({ params }: InvestorPageProps): Promi
                 <SectionTabs
                   variant="pills"
                   tabs={[
+                    ...(huf || nse ? [{ label: huf ? 'HUF & NSE' : 'NSE', content: <HufPanel huf={huf} nse={nse} /> }] : []),
                     { label: 'KYC', content: <KycPanel kyc={detail.kyc} /> },
                     {
                       label: 'Bank & nominees',

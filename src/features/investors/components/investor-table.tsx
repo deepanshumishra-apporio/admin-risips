@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { nudge } from '@/features/investors/actions';
 import { stepOf } from '@/features/investors/stages';
@@ -186,7 +187,10 @@ export function InvestorTable({ investors, canNudge }: { investors: InvestorList
                         {initialsOf(name)}
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-[14px] font-semibold text-ink group-hover:text-brand">{name}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-[14px] font-semibold text-ink group-hover:text-brand">{name}</span>
+                          {investor.accountType === 'HUF' ? <Badge tone="violet">HUF</Badge> : null}
+                        </span>
                         <span className="block truncate text-[12.5px] text-ink-muted">
                           {investor.email ?? investor.phone}
                           {investor.pan ? <span className="tabular"> · {investor.pan}</span> : null}

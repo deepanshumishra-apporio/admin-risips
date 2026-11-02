@@ -28,6 +28,7 @@ export function listInvestors(query: InvestorListQuery): Promise<InvestorList> {
       search: query.search,
       stage: query.stage,
       kycStatus: query.kycStatus,
+      accountType: query.accountType,
       kycStalled: query.kycStalled ? 'true' : undefined,
       sipDueDays: query.sipDueDays,
       attention: query.attention,

@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, ChevronRight, UserRound } from 'lucide-react';
+import { Building2, ChevronRight, Landmark, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,7 @@ import { isReportKey, ReportName } from '@/features/reports/labels';
 /** Sections that are reachable but deliberately absent from the nav rail. */
 const OffNavSections: Record<string, { label: string; icon: LucideIcon }> = {
   profile: { label: 'Your profile', icon: UserRound },
+  onboarding: { label: 'Onboarding', icon: Landmark },
 };
 
 /** Resolves a detail-route id to the name a human would recognise. */
@@ -40,6 +41,10 @@ function resolveLeaf(section: string, segment: string): string {
 
   if (section === 'announcements') {
     return segment === 'new' ? 'New announcement' : 'Announcement';
+  }
+
+  if (section === 'onboarding') {
+    return segment === 'hufs' ? 'HUFs' : segment;
   }
 
   if (section === 'model-portfolios') {

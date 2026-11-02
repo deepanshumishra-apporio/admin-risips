@@ -1,4 +1,14 @@
-import type { JourneyStage, KycNextStep, KycStatus } from '@/types/admin-api.types';
+import type { AccountType, JourneyStage, KycNextStep, KycStatus } from '@/types/admin-api.types';
+
+export const AccountTypeLabel: Record<AccountType, string> = {
+  INDIVIDUAL: 'Individual',
+  HUF: 'HUF',
+};
+
+export const AccountTypeOptions = (Object.keys(AccountTypeLabel) as AccountType[]).map((value) => ({
+  value,
+  label: AccountTypeLabel[value],
+}));
 
 export const StageLabel: Record<JourneyStage, string> = {
   SIGNED_UP: 'Signed up',

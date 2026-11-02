@@ -15,6 +15,10 @@ export const Config = {
   get apiUrl(): string {
     return required('ADMIN_API_URL').replace(/\/+$/, '');
   },
+  /** The API's DASHBOARD_PROXY_KEY, so it believes the visitor IP this server passes on. Optional. */
+  get apiProxyKey(): string | null {
+    return process.env.ADMIN_API_PROXY_KEY?.trim() || null;
+  },
   /** Cookies are Secure everywhere except plain-http local development. */
   get secureCookies(): boolean {
     return process.env.NODE_ENV === 'production';

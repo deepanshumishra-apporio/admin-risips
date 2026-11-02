@@ -21,6 +21,7 @@ export function ContactCard({ detail }: { detail: InvestorDetail }): React.JSX.E
   const { summary, user, profile } = detail;
   const name = summary.name ?? 'Unnamed investor';
   const address = profile?.addresses[0];
+  const huf = detail.huf ?? null;
 
   return (
     <Card>
@@ -53,7 +54,13 @@ export function ContactCard({ detail }: { detail: InvestorDetail }): React.JSX.E
         </ul>
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3.5">
-          <Row label="PAN" value={summary.pan} />
+          <Row label={huf ? 'HUF PAN' : 'PAN'} value={summary.pan} />
+          {huf ? (
+            <>
+              <Row label="Karta" value={huf.karta?.name ?? null} />
+              <Row label="Formed on" value={huf.formedOn ? formatDate(huf.formedOn) : null} />
+            </>
+          ) : null}
           <Row label="Date of birth" value={profile?.dateOfBirth ? formatDate(profile.dateOfBirth) : null} />
           <Row label="Gender" value={profile?.gender ? humanize(profile.gender) : null} />
           <Row label="Occupation" value={profile?.occupation ? humanize(profile.occupation) : null} />

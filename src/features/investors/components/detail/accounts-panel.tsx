@@ -63,7 +63,11 @@ export function AccountsPanel({ bankAccounts, nomination, mandates }: AccountsPa
             </ul>
           ) : (
             <p className="text-[13px] text-ink-muted">
-              {nomination.optedOut ? 'Opted out of nomination.' : 'Not answered yet.'}
+              {nomination.notApplicable
+                ? 'Not applicable: a HUF cannot nominate.'
+                : nomination.optedOut
+                  ? 'Opted out of nomination.'
+                  : 'Not answered yet.'}
             </p>
           )}
         </CardBody>

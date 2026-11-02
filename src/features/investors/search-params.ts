@@ -1,7 +1,9 @@
 import {
+  AccountTypes,
   InvestorAttentions,
   JourneyStages,
   KycStatuses,
+  type AccountType,
   type InvestorAttention,
   type InvestorListQuery,
   type JourneyStage,
@@ -13,6 +15,8 @@ export type InvestorFilters = {
   q: string;
   stage: JourneyStage[];
   kyc: KycStatus[];
+  /** Individuals, HUFs, or both when empty. */
+  type: AccountType[];
   stalled: boolean;
   /** Only investors with an active SIP due within this many days. */
   sipDue: number | null;
@@ -29,7 +33,7 @@ export const PageStep = 25;
 export const MaxShow = 100;
 
 export const BlankFilters: InvestorFilters = {
-  q: '', stage: [], kyc: [], stalled: false, sipDue: null, attention: null, show: PageStep, cursor: null,
+  q: '', stage: [], kyc: [], type: [], stalled: false, sipDue: null, attention: null, show: PageStep, cursor: null,
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -60,6 +64,7 @@ export function parseInvestorFilters(params: RawParams): InvestorFilters {
     q: first(params['q']).trim().slice(0, 100),
     stage: listOf(params['stage'], JourneyStages),
     kyc: listOf(params['kyc'], KycStatuses),
+    type: listOf(params['type'], AccountTypes),
     stalled: first(params['stalled']) === 'true',
     sipDue: first(params['sipDue']) !== '' && Number.isInteger(sipDue) && sipDue >= 0 && sipDue <= 60 ? sipDue : null,
     attention: (InvestorAttentions as readonly string[]).includes(attention) ? (attention as InvestorAttention) : null,
@@ -74,6 +79,7 @@ export function toFilterQuery(filters: InvestorFilters): Omit<InvestorListQuery,
     ...(filters.q && { search: filters.q }),
     ...(filters.stage.length && { stage: filters.stage }),
     ...(filters.kyc.length && { kycStatus: filters.kyc }),
+    ...(filters.type.length && { accountType: filters.type }),
     ...(filters.stalled && { kycStalled: true }),
     ...(filters.sipDue !== null && { sipDueDays: filters.sipDue }),
     ...(filters.attention && { attention: filters.attention }),
@@ -89,6 +95,7 @@ function toParams(filters: InvestorFilters): URLSearchParams {
   if (filters.q) params.set('q', filters.q);
   if (filters.stage.length) params.set('stage', filters.stage.join(','));
   if (filters.kyc.length) params.set('kyc', filters.kyc.join(','));
+  if (filters.type.length) params.set('type', filters.type.join(','));
   if (filters.stalled) params.set('stalled', 'true');
   if (filters.sipDue !== null) params.set('sipDue', String(filters.sipDue));
   if (filters.attention) params.set('attention', filters.attention);
@@ -117,5 +124,5 @@ export function exportHref(filters: InvestorFilters): string {
 /** Two filter states pick the same investors (ignoring search and paging). */
 export function sameView(a: InvestorFilters, b: InvestorFilters): boolean {
   const same = (x: readonly string[], y: readonly string[]) => x.length === y.length && x.every((value) => y.includes(value));
-  return same(a.stage, b.stage) && same(a.kyc, b.kyc) && a.stalled === b.stalled && a.sipDue === b.sipDue && a.attention === b.attention;
+  return same(a.stage, b.stage) && same(a.kyc, b.kyc) && same(a.type, b.type) && a.stalled === b.stalled && a.sipDue === b.sipDue && a.attention === b.attention;
 }

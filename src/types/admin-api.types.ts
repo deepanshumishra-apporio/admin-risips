@@ -13,6 +13,7 @@ export type Permission =
   | 'announcements.manage'
   | 'portfolios.manage'
   | 'meetings.manage'
+  | 'hufs.manage'
   | 'staff.manage'
   | 'roles.manage';
 
@@ -64,6 +65,10 @@ export type JourneyStage = (typeof JourneyStages)[number];
 
 export type KycNextStep = 'PROVIDE_DETAILS' | 'FETCH_PROOF' | 'UPLOAD_SIGNATURE' | 'ESIGN' | 'WAITING_ON_PROVIDER';
 
+/** A HUF is its own investor (its own PAN, bank and folios), added from the karta's login and run by the karta. */
+export const AccountTypes = ['INDIVIDUAL', 'HUF'] as const;
+export type AccountType = (typeof AccountTypes)[number];
+
 export type CountByKey<K extends string = string> = { key: K; label: string; count: number };
 
 export type DashboardSummary = {
@@ -79,7 +84,10 @@ export type DashboardSummary = {
     inProgressByStep: CountByKey<KycNextStep>[];
   };
   journey: { byStage: CountByKey<JourneyStage>[] };
+  /** Absent from an API that predates HUFs. */
+  accountTypes?: CountByKey<AccountType>[];
   funnel: CountByKey[];
+  funnelByAccountType?: Record<AccountType, CountByKey[]>;
   attention: {
     kycStalled: number;
     kycFailedOrExpired: number;
@@ -111,6 +119,8 @@ export type InvestorListItem = {
   name: string | null;
   email: string | null;
   phone: string;
+  /** Absent from an API that predates HUFs: an individual. */
+  accountType?: AccountType;
   status: string;
   pan: string | null;
   stage: JourneyStage;
@@ -140,6 +150,7 @@ export type InvestorAttention = (typeof InvestorAttentions)[number];
 export type InvestorOverview = {
   total: number;
   byStage: Record<JourneyStage, number>;
+  byAccountType?: Record<AccountType, number>;
   kycPending: number;
   kycStalled: number;
   attention: Record<InvestorAttention, number>;
@@ -165,6 +176,7 @@ export type InvestorListQuery = {
   search?: string;
   stage?: JourneyStage[];
   kycStatus?: KycStatus[];
+  accountType?: AccountType[];
   kycStalled?: boolean;
   sipDueDays?: number;
   attention?: InvestorAttention;
@@ -224,10 +236,40 @@ export type InvestorDetail = {
     verificationConfidence: string | null;
     verifiedAt: string | null;
   }[];
-  nomination: { optedOut: boolean; nominees: { name: string; relationship: string; allocationPercentage: string }[] };
+  nomination: {
+    /** A HUF can't nominate. */
+    notApplicable?: boolean;
+    optedOut: boolean;
+    nominees: { name: string; relationship: string; allocationPercentage: string }[];
+  };
   mandates: { id: string; type: string; status: string; limit: string; approvedAt: string | null; createdAt: string }[];
+  /** HUF only. */
+  huf?: HufDetails | null;
+  /** The investor's registration on NSE Invest, when the app backend sends it. */
+  nse?: NseRegistration | null;
   investments: InvestorInvestments;
   timeline: { at: string; event: string }[];
+};
+
+export type HufDetails = {
+  formedOn: string | null;
+  natureOfBusiness: string | null;
+  /** The karta's own investor record. */
+  karta: { id: string; name: string | null; pan: string | null } | null;
+  coparceners: { name: string; relationship: string; dateOfBirth: string | null }[];
+};
+
+export type FatcaRegistrarStatus = { status: 'NOT_SENT' | 'PENDING' | 'ACCEPTED' | 'REJECTED'; remark: string | null };
+
+export type NseRegistration = {
+  clientCode: string | null;
+  registeredAt: string | null;
+  /** NSE's own bank check: PENDING, then ACTIVE (or a rejection). */
+  bankStatus: string | null;
+  bankRemark: string | null;
+  fatca: { cams: FatcaRegistrarStatus; kfin: FatcaRegistrarStatus } | null;
+  /** Null when unknown: NSE's authorisation report returns nothing for HUFs. */
+  authorised: boolean | null;
 };
 
 // --- staff management ----------------------------------------------------------
@@ -716,7 +758,8 @@ export type ComplianceKind =
   | 'COMPLAINT_OVERDUE'
   | 'PAYOUT_BANK_UNVERIFIED'
   | 'CONTACT_MISSING'
-  | 'MONITORING_STALE';
+  | 'MONITORING_STALE'
+  | 'FATCA_REJECTED';
 export type ComplianceSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
 export type ComplianceStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
 
@@ -873,3 +916,107 @@ export type ReviewMeetingList = {
 };
 
 export type MeetingInvestorOption = { id: string; name: string | null; phone: string | null };
+
+// --- HUF onboarding on NSE ---------------------------------------------------------
+
+export const HufStatuses = ['DRAFT', 'AWAITING_CONSENT', 'CONSENTED', 'SUBMITTING', 'NSE_FAILED', 'AWAITING_KARTA', 'ACTIVE', 'CANCELLED'] as const;
+export type HufStatus = (typeof HufStatuses)[number];
+
+/** What staff enter. Dates are yyyy-mm-dd. */
+export type HufDetailsInput = {
+  clientCode: string;
+  hufName: string;
+  pan: string;
+  formedOn: string;
+  placeOfFormation: string;
+  natureOfBusiness: string;
+  incomeSlab: string;
+  netWorthLakhs: string;
+  netWorthDate: string;
+  email: string;
+  mobile: string;
+  accountType: 'SB' | 'CB';
+  accountNo: string;
+  ifsc: string;
+  bankHolderName: string;
+  address1: string;
+  address2: string;
+  address3: string;
+  city: string;
+  state: string;
+  pincode: string;
+  karta: { name: string; pan: string; dateOfBirth: string; gender: 'M' | 'F' | 'O' | ''; fatherName: string };
+  coparceners: { name: string; relationship: string; dateOfBirth: string | null }[];
+};
+
+export type HufRegistrarStatus = { status: 'NOT_SENT' | 'PENDING' | 'ACCEPTED' | 'REJECTED'; remark: string | null };
+export type HufNseStep = { ok: boolean; status: string; remark: string | null; at: string } | null;
+
+export type HufListItem = {
+  id: string;
+  clientCode: string;
+  hufName: string;
+  pan: string;
+  kartaName: string;
+  status: HufStatus;
+  bankStatus: string | null;
+  fatca: { cams: HufRegistrarStatus['status']; kfin: HufRegistrarStatus['status'] } | null;
+  createdBy: { id: string; name: string } | null;
+  approvedBy: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HufList = { items: HufListItem[]; nextCursor: string | null; counts: Record<HufStatus, number> };
+
+export type HufDetail = HufListItem & {
+  /** Full while the HUF can still be edited; masked once it is on NSE. */
+  details: HufDetailsInput;
+  consent: { state: 'NONE' | 'PENDING' | 'EXPIRED' | 'GIVEN'; at: string | null; ip: string | null; expiresAt: string | null };
+  steps: { duplicateCheck: { at: string; codes: string[] } | null; ucc: HufNseStep; fatca: HufNseStep };
+  nse: {
+    bankStatus: string | null;
+    bankRemark: string | null;
+    fatca: { cams: HufRegistrarStatus; kfin: HufRegistrarStatus } | null;
+    authorised: boolean | null;
+    checkedAt: string;
+  } | null;
+  authLink: string | null;
+  authLinkError: string | null;
+  lastError: string | null;
+  problems: string[];
+  approvedAt: string | null;
+  canEdit: boolean;
+  canCancel: boolean;
+  canRequestConsent: boolean;
+  /** Why this staff member can't approve it now; null when they can (or approval isn't the next step). */
+  approval: string | null;
+  events: { id: string; type: string; staffName: string | null; note: string | null; createdAt: string }[];
+};
+
+export type HufOptions = {
+  nextClientCode: string;
+  states: { code: string; name: string }[];
+  incomeSlabs: { code: string; label: string }[];
+  nse: { environment: 'UAT' | 'LIVE'; configured: boolean; liveAllowed: boolean };
+  secondApprover: boolean;
+};
+
+/** What the karta sees on the consent page: nothing in full. */
+export type HufConsentView = {
+  state: 'PENDING' | 'EXPIRED' | 'GIVEN' | 'NONE';
+  agreedAt: string | null;
+  expiresAt: string | null;
+  huf: {
+    name: string;
+    pan: string;
+    formedOn: string;
+    kartaName: string;
+    kartaPan: string;
+    email: string;
+    mobile: string;
+    bank: { ifsc: string; accountNo: string; holder: string };
+    address: string;
+    coparceners: { name: string; relationship: string }[];
+  };
+};

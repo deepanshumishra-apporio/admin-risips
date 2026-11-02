@@ -11,6 +11,7 @@ export const PermissionLabel: Record<Permission, string> = {
   'announcements.manage': 'Announcements',
   'portfolios.manage': 'Model portfolios',
   'meetings.manage': 'Review meetings',
+  'hufs.manage': 'HUF onboarding on NSE',
   'staff.manage': 'Manage staff',
   'roles.manage': 'Role Manager',
 };
@@ -18,7 +19,7 @@ export const PermissionLabel: Record<Permission, string> = {
 /** How the role editor groups permissions, mirroring the portal's menu. */
 export const PermissionGroups: { title: string; permissions: Permission[] }[] = [
   { title: 'Observe', permissions: ['dashboard.read', 'transactions.read', 'compliance.manage', 'reports.read'] },
-  { title: 'Investors', permissions: ['investors.read'] },
+  { title: 'Investors', permissions: ['investors.read', 'hufs.manage'] },
   // `meetings.manage` is left out while review meetings are parked for a later release.
   { title: 'Advisory', permissions: ['portfolios.manage'] },
   { title: 'Engagement & support', permissions: ['announcements.manage', 'support.manage'] },

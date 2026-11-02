@@ -22,8 +22,10 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Everything except sign-in, the session-expiry route and static assets.
-  // Each exclusion is anchored to a whole path segment: unanchored, a future
-  // `/authorizations` or `/signin-logs` page would silently skip this gate.
-  matcher: ['/((?!(?:signin|auth|_next/static|_next/image)(?:/|$)|(?:icon\\.svg|favicon\\.ico)$).*)'],
+  // Everything except sign-in, the session-expiry route, the karta's HUF consent
+  // page (a link with its own token, opened by someone with no staff session)
+  // and static assets. Each exclusion is anchored to a whole path segment:
+  // unanchored, a future `/authorizations` or `/signin-logs` page would silently
+  // skip this gate.
+  matcher: ['/((?!(?:signin|auth|huf-consent|_next/static|_next/image)(?:/|$)|(?:icon\\.svg|favicon\\.ico)$).*)'],
 };

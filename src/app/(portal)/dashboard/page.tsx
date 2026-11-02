@@ -59,7 +59,7 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <OnboardingFunnel funnel={summary.funnel} />
+          <OnboardingFunnel funnel={summary.funnel} byAccountType={summary.funnelByAccountType} />
           <KycBreakdown kyc={summary.kyc} />
           <JourneyStages summary={summary} />
         </div>

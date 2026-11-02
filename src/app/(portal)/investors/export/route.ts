@@ -15,7 +15,7 @@ export type ExportFailure = 'failed' | 'forbidden' | 'unavailable';
  * Anything narrower would download more people than the screen shows.
  */
 function registerQuery(filters: InvestorFilters): Record<string, string> | null {
-  const plain = !filters.q && !filters.kyc.length && !filters.stalled && filters.sipDue === null && !filters.attention;
+  const plain = !filters.q && !filters.kyc.length && !filters.type.length && !filters.stalled && filters.sipDue === null && !filters.attention;
   if (!plain || filters.stage.length > 1) return null;
   return filters.stage[0] ? { status: filters.stage[0] } : {};
 }
@@ -67,6 +67,7 @@ export async function GET(request: NextRequest): Promise<Response> {
           search: query.search,
           stage: query.stage,
           kycStatus: query.kycStatus,
+          accountType: query.accountType,
           kycStalled: query.kycStalled ? 'true' : undefined,
           sipDueDays: query.sipDueDays,
           attention: query.attention,

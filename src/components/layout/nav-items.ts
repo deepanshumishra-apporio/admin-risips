@@ -4,6 +4,7 @@ import {
   Bot,
   Boxes,
   FileBarChart,
+  Landmark,
   LayoutDashboard,
   Layers,
   LifeBuoy,
@@ -47,6 +48,7 @@ export const NavSections: NavSection[] = [
     title: 'Distribution',
     items: [
       { label: 'Investors', href: '/investors', icon: Users, permission: 'investors.read' },
+      { label: 'HUF onboarding', href: '/onboarding/hufs', icon: Landmark, permission: 'hufs.manage' },
       { label: 'Agents', href: '/agents', icon: UsersRound, soon: true },
       { label: 'Staff', href: '/staff', icon: UserCog, permission: ['staff.manage', 'roles.manage'] },
     ],

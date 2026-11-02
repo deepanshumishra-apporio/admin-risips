@@ -1,7 +1,7 @@
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import Link from 'next/link';
 
-import { KycOptions, StageOptions } from '@/features/investors/labels';
+import { AccountTypeOptions, KycOptions, StageOptions } from '@/features/investors/labels';
 import { BlankFilters, investorsHref, sameView, type InvestorFilters } from '@/features/investors/search-params';
 import type { InvestorOverview } from '@/types/admin-api.types';
 import { cn } from '@/utils/cn';
@@ -26,9 +26,13 @@ export function InvestorFiltersBar({ filters, overview }: { filters: InvestorFil
     { label: 'Ready to invest', count: overview?.byStage.READY_TO_INVEST, filters: { stage: ['READY_TO_INVEST'] } },
     { label: 'Invested', count: overview?.byStage.INVESTED, filters: { stage: ['INVESTED'] } },
     { label: 'SIP due in 7 days', count: overview?.sipDueIn7Days, filters: { sipDue: 7 } },
+    // Shown once the API counts HUFs, or while the view is already HUFs only.
+    ...(overview?.byAccountType?.HUF || filters.type.includes('HUF')
+      ? [{ label: 'HUFs', count: overview?.byAccountType?.HUF, filters: { type: ['HUF' as const] } }]
+      : []),
   ];
   const single = (values: readonly string[]): string => (values.length === 1 ? values[0]! : '');
-  const pickerCount = (filters.stage.length ? 1 : 0) + (filters.kyc.length ? 1 : 0);
+  const pickerCount = (filters.stage.length ? 1 : 0) + (filters.kyc.length ? 1 : 0) + (filters.type.length ? 1 : 0);
 
   return (
     <div className="space-y-4 px-6 pt-6">
@@ -81,7 +85,7 @@ export function InvestorFiltersBar({ filters, overview }: { filters: InvestorFil
         <details className="group relative">
           <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-line bg-surface-sunken px-4 text-[14px] font-medium text-ink select-none hover:border-line-strong [&::-webkit-details-marker]:hidden">
             <SlidersHorizontal className="size-4 text-ink-muted" />
-            Stage · KYC
+            Stage · KYC · Type
             {pickerCount ? (
               <span className="tabular rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">{pickerCount}</span>
             ) : null}
@@ -103,6 +107,17 @@ export function InvestorFiltersBar({ filters, overview }: { filters: InvestorFil
               <select name="kyc" defaultValue={single(filters.kyc)} className={ControlClass}>
                 <option value="">Any KYC status</option>
                 {KycOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-[12.5px] text-ink-soft">Account type</span>
+              <select name="type" defaultValue={single(filters.type)} className={ControlClass}>
+                <option value="">Individuals and HUFs</option>
+                {AccountTypeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

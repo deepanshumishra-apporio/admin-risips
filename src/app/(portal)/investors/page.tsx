@@ -38,6 +38,7 @@ function viewNote(filters: InvestorFilters): string | null {
   if (stages.length === 1 && stages[0] === 'INVESTED') return 'all have invested';
   if (stages.length === 1 && stages[0] === 'READY_TO_INVEST') return 'all have completed KYC in this view';
   if (stages.length && stages.every((stage) => stage === 'SIGNED_UP')) return "haven't started KYC";
+  if (filters.type.length === 1 && filters.type[0] === 'HUF') return 'HUFs, each run by its karta';
   return null;
 }
 

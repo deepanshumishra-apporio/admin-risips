@@ -39,6 +39,14 @@ async function forwardedHeaders(): Promise<Record<string, string>> {
   // fallback is the right-most hop, the one the nearest proxy appended.
   const clientIp = incoming.get('x-real-ip')?.trim() || incoming.get('x-forwarded-for')?.split(',').at(-1)?.trim();
   if (clientIp) forwarded['x-forwarded-for'] = clientIp;
+  // Through the API's Caddy, X-Forwarded-For arrives as this server's own
+  // address. The same IP in our own header, with the key the API shares,
+  // survives it: the API's record of a karta's HUF consent depends on it.
+  const proxyKey = Config.apiProxyKey;
+  if (clientIp && proxyKey) {
+    forwarded['x-risips-client-ip'] = clientIp;
+    forwarded['x-risips-proxy-key'] = proxyKey;
+  }
   const userAgent = incoming.get('user-agent');
   if (userAgent) forwarded['user-agent'] = userAgent;
   return forwarded;
