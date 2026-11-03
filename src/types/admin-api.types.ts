@@ -1069,6 +1069,18 @@ export type HufScheme = {
   navDate: string | null;
   sipAllowed: boolean;
   sipMonthly: HufSipRule | null;
+  amcCode: string;
+  amcName: string;
+  rta: string;
+  plan: string | null;
+  purchaseAllowed: boolean;
+  redemptionAllowed: boolean;
+  redemptionMinAmount: number | null;
+  exitLoad: string | null;
+  lockInDays: number | null;
+  launchedOn: string | null;
+  openEnded: boolean | null;
+  settlement: string | null;
 };
 
 export type HufInvestments = {

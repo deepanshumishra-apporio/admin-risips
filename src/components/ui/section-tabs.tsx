@@ -15,12 +15,14 @@ type SectionTabsProps = {
   tabs: SectionTab[];
   /** `pills` is the quieter look for tabs nested inside another tab. */
   variant?: 'underline' | 'pills';
+  /** The tab open at first, e.g. from the URL so a link can land on it. */
+  initial?: number;
 };
 
 /** In-page tabs for a record or a settings screen. Panels are rendered by the
  *  caller and handed in, so switching costs nothing. */
-export function SectionTabs({ tabs, variant = 'underline' }: SectionTabsProps): React.JSX.Element {
-  const [active, setActive] = useState(0);
+export function SectionTabs({ tabs, variant = 'underline', initial = 0 }: SectionTabsProps): React.JSX.Element {
+  const [active, setActive] = useState(initial >= 0 && initial < tabs.length ? initial : 0);
   const pills = variant === 'pills';
 
   return (

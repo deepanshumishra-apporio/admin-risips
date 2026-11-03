@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, Wallet, XCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pencil, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -7,47 +7,35 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
+import { SectionTabs } from '@/components/ui/section-tabs';
 import {
   ApproveAction, CancelAction, ConsentLinkAction, MarkActiveAction, RefreshAction, ResendAction,
 } from '@/features/hufs/components/huf-actions';
-import { HufDocuments } from '@/features/hufs/components/huf-documents';
-import { HufEventLabel, HufStatusLabel, HufStatusTone, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
+import {
+  AtAGlance, FamilyPanel, HistoryPanel, OnboardingPanel, PortfolioPanel, TransactionsPanel,
+} from '@/features/hufs/components/huf-record';
+import { HufStatusLabel, HufStatusTone } from '@/features/hufs/labels';
+import { fundsOf } from '@/features/hufs/portfolio';
 import { ApiError } from '@/lib/api/errors';
-import { getHuf, getHufOptions } from '@/lib/api/hufs';
+import { getHuf, getHufInvestments, getHufOptions } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
-import type { HufDetail } from '@/types/admin-api.types';
-import { formatDate, formatDateTime } from '@/utils/format';
+import type { HufDetail, HufInvestmentsView } from '@/types/admin-api.types';
 
 export const metadata: Metadata = { title: 'HUF · RiSips Admin' };
 
-type StepState = 'done' | 'failed' | 'todo';
+/** The tabs, by the name a link can open them with (?tab=portfolio). */
+const TabKeys = ['onboarding', 'portfolio', 'transactions', 'family', 'history'] as const;
 
-function Step({ state, title, detail }: { state: StepState; title: string; detail?: string | null }): React.JSX.Element {
-  const Icon = state === 'done' ? CheckCircle2 : state === 'failed' ? XCircle : Circle;
-  const tone = state === 'done' ? 'text-success' : state === 'failed' ? 'text-danger' : 'text-ink-muted';
-  return (
-    <li className="flex gap-3">
-      <Icon className={`mt-0.5 size-4.5 shrink-0 ${tone}`} />
-      <div className="min-w-0">
-        <p className="text-[13.5px] font-medium text-ink">{title}</p>
-        {detail ? <p className="mt-0.5 text-[12.5px] text-ink-muted">{detail}</p> : null}
-      </div>
-    </li>
-  );
-}
+type HufPageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-function Row({ label, value }: { label: string; value: React.ReactNode }): React.JSX.Element {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[11.5px] text-ink-muted">{label}</dt>
-      <dd className="mt-0.5 text-[13px] font-medium break-words text-ink">{value || '—'}</dd>
-    </div>
-  );
-}
-
-const nseStepState = (step: HufDetail['steps']['ucc']): StepState => (!step ? 'todo' : step.ok ? 'done' : 'failed');
-
-export default async function HufPage({ params }: { params: Promise<{ id: string }> }): Promise<React.JSX.Element> {
+/**
+ * One HUF: where it stands on NSE, what it holds and has ordered, the family behind it, and its history.
+ * The next thing to do sits beside every tab.
+ */
+export default async function HufPage({ params, searchParams }: HufPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
   if (!(await hasPermission('hufs.manage'))) {
     return (
@@ -64,16 +52,31 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
     if (error instanceof ApiError && error.isNotFound) notFound();
     throw error;
   }
-  const options = await getHufOptions();
-  const d = huf.details;
-  const { consent, steps, nse } = huf;
-  const onNse = Boolean(steps.ucc?.ok);
+  const onNse = Boolean(huf.steps.ucc?.ok) && huf.status !== 'CANCELLED';
+  const [options, view] = await Promise.all([getHufOptions(), onNse ? getHufInvestments(id) : Promise.resolve<HufInvestmentsView | null>(null)]);
   const live = options.nse.environment === 'LIVE';
-  const bank = nse?.bankStatus?.toUpperCase() ?? null;
-  const consentDetail =
-    consent.state === 'GIVEN' ? `Agreed ${formatDateTime(consent.at!)} from ${consent.ip}`
-      : consent.state === 'PENDING' ? `Link sent, valid until ${formatDateTime(consent.expiresAt!)}`
-        : consent.state === 'EXPIRED' ? 'The link expired. Create a new one.' : 'No link yet';
+  const { steps } = huf;
+  const inv = view?.investments ?? null;
+
+  const asked = (await searchParams)['tab'];
+  const askedIndex = TabKeys.indexOf((typeof asked === 'string' ? asked : '') as never);
+  // A HUF already on NSE opens on its money; one still being onboarded, on its steps.
+  const initial = askedIndex >= 0 ? askedIndex : onNse && huf.status === 'ACTIVE' ? 1 : 0;
+
+  const tabs = [
+    { label: 'Onboarding', ...(huf.problems.length ? { count: huf.problems.length } : {}), content: <OnboardingPanel huf={huf} options={options} /> },
+    ...(view
+      ? [
+          { label: 'Portfolio', ...(inv && fundsOf(inv).length ? { count: fundsOf(inv).length } : {}), content: <PortfolioPanel hufId={id} view={view} /> },
+          { label: 'Transactions', ...(inv?.orders.length ? { count: inv.orders.length } : {}), content: <TransactionsPanel hufId={id} view={view} /> },
+        ]
+      : []),
+    { label: 'Family & bank', content: <FamilyPanel huf={huf} /> },
+    { label: 'History', content: <HistoryPanel huf={huf} /> },
+  ];
+  // Without Portfolio and Transactions the keys shift; map the asked tab onto what is shown.
+  const shown = view ? TabKeys : (['onboarding', 'family', 'history'] as const);
+  const initialShown = Math.max(0, (shown as readonly string[]).indexOf(TabKeys[initial] ?? 'onboarding'));
 
   return (
     <>
@@ -89,6 +92,7 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
             <Badge tone={HufStatusTone[huf.status]} dot>
               {HufStatusLabel[huf.status]}
             </Badge>
+            {huf.source === 'NSE' ? <Badge tone="neutral">On NSE directly</Badge> : null}
             {huf.canEdit ? (
               <Link
                 href={`/onboarding/hufs/${id}/edit`}
@@ -98,13 +102,13 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
                 Edit
               </Link>
             ) : null}
-            {onNse && huf.status !== 'CANCELLED' ? (
+            {view && !view.block ? (
               <Link
-                href={`/onboarding/hufs/${id}/investments`}
+                href={`/onboarding/hufs/${id}/invest`}
                 className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-strong"
               >
-                <Wallet className="size-3.5" />
-                Investments
+                <Plus className="size-3.5" />
+                Invest
               </Link>
             ) : null}
           </>
@@ -119,107 +123,16 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-4">
-          <Card>
-            <CardHeader title="Onboarding" subtitle="Each step must finish before the next. Approving again re-runs only the steps that did not finish." />
-            <CardBody>
-              <ol className="space-y-4">
-                {huf.source === 'NSE' ? (
-                  <Step
-                    state="done"
-                    title="Registered on NSE directly"
-                    detail={`Not through this admin (e.g. on NSE's portal), so consent and approval aren't recorded here. Found by the sync; created on NSE ${formatDate(huf.createdAt)}.`}
-                  />
-                ) : (
-                  <>
-                    <Step state="done" title="Prepared" detail={`By ${huf.createdBy?.name ?? 'a colleague'} on ${formatDate(huf.createdAt)}`} />
-                    <Step state={consent.state === 'GIVEN' ? 'done' : consent.state === 'EXPIRED' ? 'failed' : 'todo'} title="Karta's consent" detail={consentDetail} />
-                    <Step
-                      state={huf.approvedBy ? 'done' : 'todo'}
-                      title="Approved by a colleague"
-                      detail={huf.approvedBy ? `${huf.approvedBy.name}, ${formatDateTime(huf.approvedAt!)}` : options.secondApprover ? 'Someone other than the preparer' : null}
-                    />
-                    <Step
-                      state={!steps.duplicateCheck ? 'todo' : steps.duplicateCheck.codes.some((c) => c !== huf.clientCode) && !onNse ? 'failed' : 'done'}
-                      title="Duplicate check on NSE"
-                      detail={steps.duplicateCheck ? (steps.duplicateCheck.codes.length ? `NSE already has this PAN as ${steps.duplicateCheck.codes.join(', ')}` : 'No other client code for this PAN') : null}
-                    />
-                  </>
-                )}
-                <Step state={nseStepState(steps.ucc)} title="Client registered on NSE (UCC)" detail={steps.ucc?.remark ?? (steps.ucc?.ok ? formatDateTime(steps.ucc.at) : null)} />
-                <Step state={nseStepState(steps.fatca)} title="FATCA, with the karta as beneficial owner" detail={steps.fatca?.remark} />
-                <Step
-                  state={bank === 'ACTIVE' ? 'done' : bank && bank !== 'PENDING' ? 'failed' : 'todo'}
-                  title="NSE's bank check"
-                  detail={nse ? `${nse.bankStatus ?? 'Not reported yet'}${nse.bankRemark ? ` · ${nse.bankRemark}` : ''}` : onNse ? 'Refresh to read it (takes a few minutes after registration)' : null}
-                />
-                <Step
-                  state={huf.status === 'ACTIVE' ? 'done' : 'todo'}
-                  title="Karta authorises on NSE (link + OTP)"
-                  detail={
-                    huf.status === 'ACTIVE' ? 'Active'
-                      : nse && nse.authorised === null ? "NSE doesn't report this for HUFs. An accepted order confirms it; then mark it active."
-                        : null
-                  }
-                />
-              </ol>
-            </CardBody>
-          </Card>
-
-          <HufDocuments huf={huf} />
-
-          {nse?.fatca ? (
-            <Card>
-              <CardHeader title="FATCA at the registrars" subtitle={`Read ${formatDateTime(nse.checkedAt)}. A rejection can hold up allotments in that registrar's funds.`} />
-              <CardBody className="grid gap-4 sm:grid-cols-2">
-                {(['cams', 'kfin'] as const).map((r) => (
-                  <div key={r}>
-                    <p className="mb-1.5 text-[12px] text-ink-muted">{r === 'cams' ? 'CAMS' : 'KFin'}</p>
-                    <Badge tone={RegistrarTone[nse.fatca![r].status]}>{RegistrarLabel[nse.fatca![r].status]}</Badge>
-                    {nse.fatca![r].remark ? <p className="mt-1.5 text-[12.5px] text-ink-soft">{nse.fatca![r].remark}</p> : null}
-                  </div>
-                ))}
-              </CardBody>
-            </Card>
-          ) : null}
-
-          <Card>
-            <CardHeader title="Details" subtitle={onNse ? 'Registered on NSE: shown masked, and locked.' : undefined} />
-            <CardBody>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-                <Row label="HUF PAN" value={d.pan} />
-                <Row label="Formed on" value={d.formedOn ? formatDate(d.formedOn) : null} />
-                <Row label="Place formed" value={d.placeOfFormation} />
-                <Row label="Nature of business" value={d.natureOfBusiness} />
-                <Row label="Net worth" value={`₹${d.netWorthLakhs} lakh, as on ${d.netWorthDate ? formatDate(d.netWorthDate) : '—'}`} />
-                <Row label="Karta" value={d.karta.name ? `${d.karta.name}${d.karta.pan ? ` · ${d.karta.pan}` : ''}` : 'Not on NSE’s record (FATCA was sent without a beneficial owner)'} />
-                <Row label="Karta's email" value={d.email} />
-                <Row label="Karta's mobile" value={d.mobile} />
-                <Row label="Bank account" value={`${d.bankHolderName} · ${d.accountNo} · ${d.ifsc}`} />
-                <Row label="Address" value={[d.address1, d.address2, d.address3, d.city, d.pincode].filter(Boolean).join(', ')} />
-              </dl>
-              {d.coparceners.length ? (
-                <div className="mt-4 border-t border-line pt-3">
-                  <p className="mb-2 text-[11.5px] text-ink-muted">Co-parceners</p>
-                  <ul className="space-y-1 text-[13px] text-ink">
-                    {d.coparceners.map((m) => (
-                      <li key={`${m.name}-${m.relationship}`}>
-                        {m.name} <span className="text-ink-muted">· {m.relationship}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </CardBody>
-          </Card>
-        </div>
+      {/* grid-cols-1 is minmax(0,1fr): without it the column grows to the tables' min width and the page scrolls sideways. */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <SectionTabs tabs={tabs} initial={initialShown} />
 
         <div className="space-y-4">
+          <AtAGlance huf={huf} view={view} />
           <Card>
             <CardHeader title="Next" />
             <CardBody className="space-y-4">
-              {huf.canRequestConsent ? <ConsentLinkAction id={id} again={consent.state !== 'NONE'} /> : null}
+              {huf.canRequestConsent ? <ConsentLinkAction id={id} again={huf.consent.state !== 'NONE'} /> : null}
               {huf.status === 'CONSENTED' || huf.status === 'NSE_FAILED' ? (
                 huf.approval ? (
                   <p className="text-[13px] text-ink-soft">{huf.approval}</p>
@@ -229,40 +142,17 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
               ) : null}
               {onNse ? <RefreshAction id={id} /> : null}
               {huf.authLink && huf.status !== 'ACTIVE' ? (
-                <a
-                  href={huf.authLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-deep"
-                >
+                <a href={huf.authLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-deep">
                   The karta&apos;s NSE authorisation link
                   <ExternalLink className="size-3.5" />
                 </a>
-              ) : huf.authLinkError && huf.status === 'AWAITING_KARTA' ? (
+              ) : huf.authLinkError && huf.status === 'AWAITING_KARTA' && huf.source !== 'NSE' ? (
                 <p className="text-[12.5px] text-ink-muted">NSE link not issued yet: {huf.authLinkError}</p>
               ) : null}
-              {steps.fatca?.ok && huf.status !== 'ACTIVE' ? <ResendAction id={id} /> : null}
+              {steps.fatca?.ok && huf.status !== 'ACTIVE' && huf.source !== 'NSE' ? <ResendAction id={id} /> : null}
               {huf.status === 'AWAITING_KARTA' ? <MarkActiveAction id={id} /> : null}
-              {huf.status === 'ACTIVE' ? <p className="text-[13px] text-success">Active on NSE. The HUF can invest from its own bank account.</p> : null}
+              {huf.status === 'ACTIVE' ? <p className="text-[13px] text-success">Active on NSE. The HUF invests from its own bank account.</p> : null}
               {huf.canCancel ? <CancelAction id={id} /> : null}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader title="History" />
-            <CardBody>
-              <ol className="space-y-3">
-                {huf.events.map((e) => (
-                  <li key={e.id} className="text-[12.5px]">
-                    <p className="font-medium text-ink">{HufEventLabel[e.type] ?? e.type}</p>
-                    <p className="text-ink-muted">
-                      {formatDateTime(e.createdAt)}
-                      {e.staffName ? ` · ${e.staffName}` : ''}
-                    </p>
-                    {e.note ? <p className="mt-0.5 text-ink-soft">{e.note}</p> : null}
-                  </li>
-                ))}
-              </ol>
             </CardBody>
           </Card>
         </div>

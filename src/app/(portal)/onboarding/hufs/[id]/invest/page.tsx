@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
 import { MandateForm, PurchaseForm, SipForm } from '@/features/hufs/components/invest-forms';
@@ -61,12 +62,13 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
   if (!chosen && chosenCode) chosen = (await searchHufSchemes(chosenCode).catch(() => [])).find((s) => s.schemeCode === chosenCode) ?? null;
   const href = (change: Record<string, string>) => `/onboarding/hufs/${id}/invest?${new URLSearchParams({ q, ...(chosen && { scheme: chosen.schemeCode }), tab, ...change }).toString()}`;
   const folios = chosen ? view.folios.filter((f) => f.schemeCode === chosen!.schemeCode).map((f) => f.folio) : [];
+  const held = new Set((view.investments?.holdings ?? []).map((h) => h.schemeCode));
 
   return (
     <>
-      <Link href={`/onboarding/hufs/${id}/investments`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
+      <Link href={`/onboarding/hufs/${id}?tab=portfolio`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
-        Investments of {huf.hufName}
+        {huf.hufName} · Portfolio
       </Link>
       <PageHeader
         title="Invest"
@@ -108,7 +110,10 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
                           className={cn('flex items-center justify-between gap-3 px-3 py-2 text-[13px] hover:bg-surface-sunken', chosen?.schemeCode === s.schemeCode && 'bg-brand-soft')}
                         >
                           <span className="min-w-0">
-                            <span className="block truncate font-medium text-ink">{s.name}</span>
+                            <span className="flex items-center gap-2">
+                              <span className="truncate font-medium text-ink">{s.name}</span>
+                              {held.has(s.schemeCode) ? <Badge tone="success">Held</Badge> : null}
+                            </span>
                             <span className="tabular text-[12px] text-ink-muted">
                               {s.schemeCode} · {s.type} · min ₹{s.minFresh ?? '—'}{s.sipMonthly ? ` · SIP from ₹${s.sipMonthly.minAmount ?? '—'}` : ''}
                             </span>
@@ -127,8 +132,29 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
 
           {chosen ? (
             <Card>
-              <CardHeader title="2. How" subtitle={`${chosen.name} · NAV ${chosen.nav ?? '—'}${chosen.navDate ? ` on ${chosen.navDate}` : ''}`} />
+              <CardHeader
+                title="2. How"
+                subtitle={chosen.name}
+                action={
+                  <Link href={`/onboarding/hufs/${id}/funds/${encodeURIComponent(chosen.schemeCode)}`} className="text-[12.5px] font-semibold text-brand hover:text-brand-deep">
+                    About this fund
+                  </Link>
+                }
+              />
               <CardBody className="space-y-4">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-surface-sunken p-3 text-[12.5px] sm:grid-cols-4">
+                  {([
+                    ['NAV', chosen.nav ? `₹${chosen.nav}${chosen.navDate ? ` (${chosen.navDate})` : ''}` : '—'],
+                    ['First purchase from', chosen.minFresh ? `₹${chosen.minFresh.toLocaleString('en-IN')}` : '—'],
+                    ['Cut-off', chosen.cutoff || '—'],
+                    ['Monthly SIP', chosen.sipMonthly ? `from ₹${(chosen.sipMonthly.minAmount ?? 0).toLocaleString('en-IN')}` : 'Not offered'],
+                  ] as const).map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-ink-muted">{label}</dt>
+                      <dd className="font-medium text-ink">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
                 <nav className="flex gap-2">
                   {(['lumpsum', 'sip'] as const).map((t) => (
                     <Link

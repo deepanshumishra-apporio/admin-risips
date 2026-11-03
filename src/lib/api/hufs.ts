@@ -29,3 +29,8 @@ export function getHufInvestments(id: string): Promise<HufInvestmentsView> {
 export function searchHufSchemes(search: string): Promise<HufScheme[]> {
   return authedRequest('/hufs/schemes', { query: { search } });
 }
+
+/** One fund as NSE's masters describe it. */
+export function getHufScheme(code: string): Promise<HufScheme> {
+  return authedRequest(`/hufs/schemes/${encodeURIComponent(code)}`);
+}
