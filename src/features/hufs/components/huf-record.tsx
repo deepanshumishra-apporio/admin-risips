@@ -29,9 +29,9 @@ function Step({ state, title, detail }: { state: StepState; title: string; detai
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }): React.JSX.Element {
+function Row({ label, value, wide }: { label: string; value: React.ReactNode; wide?: boolean }): React.JSX.Element {
   return (
-    <div className="min-w-0">
+    <div className={cn('min-w-0', wide && 'col-span-2')}>
       <dt className="text-[11.5px] text-ink-muted">{label}</dt>
       <dd className="mt-0.5 text-[13px] font-medium break-words text-ink">{value || '—'}</dd>
     </div>
@@ -435,12 +435,13 @@ export function AtAGlance({ huf, view }: { huf: HufDetail; view: HufInvestmentsV
       <CardHeader title="At a glance" />
       <CardBody>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <Row label="Status" value={<Badge tone={HufStatusTone[huf.status]}>{HufStatusLabel[huf.status]}</Badge>} />
+          {/* Status labels run long ("Waiting on the karta (NSE link)"); a half-width cell lets the badge spill over its neighbour. */}
+          <Row label="Status" wide value={<Badge tone={HufStatusTone[huf.status]} className="max-w-full whitespace-normal">{HufStatusLabel[huf.status]}</Badge>} />
           <Row label="Client code" value={huf.clientCode} />
+          <Row label="Value" value={view?.investments ? inr(view.investments.totals.value) : '—'} />
           <Row label="Bank check" value={nse?.bankStatus ? sentence(nse.bankStatus) : '—'} />
           <Row label="FATCA" value={verdict(nse?.fatca)} />
           <Row label="AOF" value={verdict(nse?.aof)} />
-          <Row label="Value" value={view?.investments ? inr(view.investments.totals.value) : '—'} />
         </dl>
       </CardBody>
     </Card>
