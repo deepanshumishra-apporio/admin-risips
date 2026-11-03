@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, Wallet, XCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -96,6 +96,15 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
               >
                 <Pencil className="size-3.5" />
                 Edit
+              </Link>
+            ) : null}
+            {onNse && huf.status !== 'CANCELLED' ? (
+              <Link
+                href={`/onboarding/hufs/${id}/investments`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-strong"
+              >
+                <Wallet className="size-3.5" />
+                Investments
               </Link>
             ) : null}
           </>

@@ -1043,3 +1043,71 @@ export type HufConsentView = {
     coparceners: { name: string; relationship: string }[];
   };
 };
+
+// --- a HUF's investments on NSE ----------------------------------------------------
+
+export type HufSipRule = {
+  dates: number[];
+  minAmount: number | null;
+  maxAmount: number | null;
+  multiplier: number | null;
+  minInstallments: number | null;
+  maxInstallments: number | null;
+  minGapDays: number | null;
+};
+
+export type HufScheme = {
+  schemeCode: string;
+  name: string;
+  isin: string;
+  type: string;
+  minFresh: number | null;
+  minAdditional: number | null;
+  multiplier: number | null;
+  cutoff: string;
+  nav: number | null;
+  navDate: string | null;
+  sipAllowed: boolean;
+  sipMonthly: HufSipRule | null;
+};
+
+export type HufInvestments = {
+  orders: { orderId: string; date: string | null; time: string | null; schemeCode: string; schemeName: string; type: 'PURCHASE' | 'REDEMPTION'; amount: number | null; units: number | null; folio: string | null; status: string; remark: string; orderType: string; sipRegistrationNo: string | null }[];
+  allotments: { orderId: string; date: string | null; schemeCode: string; schemeName: string; folio: string | null; nav: number | null; units: number; amount: number | null }[];
+  redemptions: { orderId: string; date: string | null; schemeCode: string; schemeName: string; folio: string | null; units: number; amount: number | null }[];
+  sips: { registrationNo: string; status: string; schemeName: string; amount: number | null; frequency: string; startDate: string | null; endDate: string | null; installments: number | null; mandateId: string | null; registeredOn: string | null }[];
+  mandates: { mandateId: string; status: string; amount: number | null; bankName: string | null; umrn: string | null; registeredOn: string | null; approvedOn: string | null; endDate: string | null; remark: string | null }[];
+  holdings: { schemeCode: string; schemeName: string; folio: string | null; units: number; invested: number; nav: number | null; navDate: string | null; value: number | null }[];
+  totals: { invested: number; value: number | null; activeSips: number; sipMonthly: number };
+  readFrom: string;
+  readAt: string;
+};
+
+/** A purchase, mandate or SIP started from the admin, with NSE's link for the karta. */
+export type HufRequest = {
+  id: string;
+  kind: 'PURCHASE' | 'MANDATE' | 'SIP';
+  nseId: string | null;
+  ok: boolean;
+  status: string;
+  remark: string | null;
+  schemeCode: string | null;
+  schemeName: string | null;
+  amount: number;
+  detail: Record<string, unknown>;
+  link: string | null;
+  linkError: string | null;
+  at: string;
+  by: string | null;
+};
+
+export type HufInvestmentsView = {
+  investments: HufInvestments | null;
+  readAt: string | null;
+  requests: HufRequest[];
+  /** Why the HUF can't invest yet; null when it can. */
+  block: string | null;
+  live: boolean;
+  approvedMandates: { mandateId: string; amount: number | null; endDate: string | null; bankName: string | null }[];
+  folios: { schemeCode: string; folio: string }[];
+};
