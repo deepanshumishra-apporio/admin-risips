@@ -42,17 +42,37 @@ function UploadButton(): React.JSX.Element {
   );
 }
 
+/**
+ * Why NSE already has this document (or doesn't need it), whatever way it got there, or null. An AOF counts once a
+ * registrar has accepted it and none has rejected it, even when it was uploaded on NSE's portal; a cancelled cheque
+ * isn't needed once NSE's bank check has passed.
+ */
+function settledOnNse(kind: HufDocumentKind, huf: HufDetail): string | null {
+  const aof = huf.nse?.aof;
+  if (kind === 'AOF' && aof) {
+    const rejected = aof.cams.status === 'REJECTED' || aof.kfin.status === 'REJECTED';
+    if (!rejected && (aof.cams.status === 'ACCEPTED' || aof.kfin.status === 'ACCEPTED')) return 'Already on NSE: nothing to upload.';
+  }
+  if (kind === 'CANCELLED_CHEQUE' && huf.nse?.bankStatus?.toUpperCase() === 'ACTIVE') {
+    return "Not needed: NSE's bank check has passed.";
+  }
+  return null;
+}
+
 function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocumentKind; title: string; why: string; huf: HufDetail }): React.JSX.Element {
   const [state, action] = useActionState(uploadHufDocument, { error: null } as HufActionState);
   const doc = huf.documents[kind];
-  const Icon = doc?.ok ? CheckCircle2 : doc ? XCircle : Circle;
+  const settled = settledOnNse(kind, huf);
+  const done = Boolean(doc?.ok) || settled !== null;
+  const Icon = done ? CheckCircle2 : doc ? XCircle : Circle;
   return (
     <li className="space-y-2 border-b border-line pb-4 last:border-b-0 last:pb-0">
       <div className="flex gap-3">
-        <Icon className={`mt-0.5 size-4.5 shrink-0 ${doc?.ok ? 'text-success' : doc ? 'text-danger' : 'text-ink-muted'}`} />
+        <Icon className={`mt-0.5 size-4.5 shrink-0 ${done ? 'text-success' : doc ? 'text-danger' : 'text-ink-muted'}`} />
         <div className="min-w-0 space-y-1">
           <p className="text-[13.5px] font-medium text-ink">{title}</p>
           <p className="text-[12.5px] text-ink-muted">{why}</p>
+          {settled ? <p className="text-[12.5px] font-medium text-success">{settled}</p> : null}
           {doc ? (
             <p className="text-[12.5px] text-ink-soft">
               {doc.ok ? 'Accepted by NSE' : `NSE refused it: ${doc.remark ?? doc.status}`} · {new Date(doc.uploadedAt).toLocaleString('en-IN')} ·{' '}
@@ -70,7 +90,8 @@ function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocum
           ) : null}
         </div>
       </div>
-      {huf.canUploadDocuments ? (
+      {/* Nothing to upload once NSE has it (or no longer needs it); a rejected or missing one can be sent again. */}
+      {huf.canUploadDocuments && !done ? (
         <form action={action} className="flex flex-wrap items-center gap-2 pl-7.5">
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="kind" value={kind} />
