@@ -57,6 +57,7 @@ export const HufEventLabel: Record<string, string> = {
   FATCA_FAILED: 'NSE refused the FATCA upload',
   NSE_FAILED: 'Stopped at an NSE step',
   LINK_RESENT: 'Authorisation link re-sent',
+  IMPORTED: 'Found on NSE by the sync',
   AOF_UPLOADED: 'Signed AOF sent to NSE',
   AOF_FAILED: 'NSE refused the AOF',
   FATCA_FORM_UPLOADED: 'Signed FATCA form sent to NSE',

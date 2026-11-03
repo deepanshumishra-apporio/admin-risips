@@ -974,6 +974,8 @@ export type HufListItem = {
   pan: string;
   kartaName: string;
   status: HufStatus;
+  /** ADMIN: prepared here. NSE: registered on NSE directly (e.g. its portal) and found by the sync. */
+  source: 'ADMIN' | 'NSE';
   bankStatus: string | null;
   fatca: { cams: HufRegistrarStatus['status']; kfin: HufRegistrarStatus['status'] } | null;
   createdBy: { id: string; name: string } | null;
@@ -1019,6 +1021,8 @@ export type HufOptions = {
   incomeSlabs: { code: string; label: string }[];
   nse: { environment: 'UAT' | 'LIVE'; configured: boolean; liveAllowed: boolean };
   secondApprover: boolean;
+  /** When HUFs registered on NSE directly were last looked for. */
+  lastSyncAt: string | null;
 };
 
 /** What the karta sees on the consent page: nothing in full. */

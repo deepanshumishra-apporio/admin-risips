@@ -5,7 +5,7 @@ import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import {
-  approveHuf, cancelHuf, createConsentLink, markHufActive, refreshHuf, resendHufLink, type HufActionState,
+  approveHuf, cancelHuf, createConsentLink, markHufActive, refreshHuf, resendHufLink, syncHufsFromNse, type HufActionState,
 } from '@/features/hufs/actions';
 import { cn } from '@/utils/cn';
 
@@ -118,6 +118,16 @@ export function MarkActiveAction({ id }: { id: string }): React.JSX.Element {
         className="h-9 w-full rounded-md border border-line-strong bg-surface px-3 text-[13px] text-ink focus:border-brand focus:ring-3 focus:ring-brand/12 focus:outline-none"
       />
       <Button>Mark active</Button>
+      <Outcome state={state} />
+    </form>
+  );
+}
+
+export function SyncAction(): React.JSX.Element {
+  const [state, action] = useActionState(syncHufsFromNse, Initial);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-3">
+      <Button>Sync from NSE</Button>
       <Outcome state={state} />
     </form>
   );

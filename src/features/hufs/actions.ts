@@ -147,6 +147,21 @@ export async function cancelHuf(_previous: HufActionState, form: FormData): Prom
   return act(form, 'cancel', 'Cancelled.');
 }
 
+/** Adds HUFs registered on NSE directly (e.g. on its portal), so every HUF on NSE shows here. */
+export async function syncHufsFromNse(_previous: HufActionState): Promise<HufActionState> {
+  try {
+    const { found, imported } = await authedRequest<{ found: number; imported: string[] }>('/hufs/sync', { method: 'POST' });
+    revalidatePath('/onboarding/hufs');
+    return {
+      error: null,
+      done: imported.length ? `Added ${imported.join(', ')} from NSE (${found} HUFs on NSE).` : `All ${found} HUFs on NSE are already here.`,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) return { error: error.message };
+    throw error;
+  }
+}
+
 /** NSE accepts these; the API checks the file really is one. */
 const DocumentTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/tiff']);
 const MaxDocumentBytes = 3 * 1024 * 1024;

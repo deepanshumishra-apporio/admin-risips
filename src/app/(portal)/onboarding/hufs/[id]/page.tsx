@@ -83,7 +83,7 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
       </Link>
       <PageHeader
         title={huf.hufName}
-        description={`Karta ${huf.kartaName} · client code ${huf.clientCode} · ${live ? 'NSE live' : 'NSE UAT'}`}
+        description={`Karta ${huf.kartaName || 'not on NSE’s record'} · client code ${huf.clientCode} · ${live ? 'NSE live' : 'NSE UAT'}`}
         actions={
           <>
             <Badge tone={HufStatusTone[huf.status]} dot>
@@ -116,18 +116,28 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
             <CardHeader title="Onboarding" subtitle="Each step must finish before the next. Approving again re-runs only the steps that did not finish." />
             <CardBody>
               <ol className="space-y-4">
-                <Step state="done" title="Prepared" detail={`By ${huf.createdBy?.name ?? 'a colleague'} on ${formatDate(huf.createdAt)}`} />
-                <Step state={consent.state === 'GIVEN' ? 'done' : consent.state === 'EXPIRED' ? 'failed' : 'todo'} title="Karta's consent" detail={consentDetail} />
-                <Step
-                  state={huf.approvedBy ? 'done' : 'todo'}
-                  title="Approved by a colleague"
-                  detail={huf.approvedBy ? `${huf.approvedBy.name}, ${formatDateTime(huf.approvedAt!)}` : options.secondApprover ? 'Someone other than the preparer' : null}
-                />
-                <Step
-                  state={!steps.duplicateCheck ? 'todo' : steps.duplicateCheck.codes.some((c) => c !== huf.clientCode) && !onNse ? 'failed' : 'done'}
-                  title="Duplicate check on NSE"
-                  detail={steps.duplicateCheck ? (steps.duplicateCheck.codes.length ? `NSE already has this PAN as ${steps.duplicateCheck.codes.join(', ')}` : 'No other client code for this PAN') : null}
-                />
+                {huf.source === 'NSE' ? (
+                  <Step
+                    state="done"
+                    title="Registered on NSE directly"
+                    detail={`Not through this admin (e.g. on NSE's portal), so consent and approval aren't recorded here. Found by the sync; created on NSE ${formatDate(huf.createdAt)}.`}
+                  />
+                ) : (
+                  <>
+                    <Step state="done" title="Prepared" detail={`By ${huf.createdBy?.name ?? 'a colleague'} on ${formatDate(huf.createdAt)}`} />
+                    <Step state={consent.state === 'GIVEN' ? 'done' : consent.state === 'EXPIRED' ? 'failed' : 'todo'} title="Karta's consent" detail={consentDetail} />
+                    <Step
+                      state={huf.approvedBy ? 'done' : 'todo'}
+                      title="Approved by a colleague"
+                      detail={huf.approvedBy ? `${huf.approvedBy.name}, ${formatDateTime(huf.approvedAt!)}` : options.secondApprover ? 'Someone other than the preparer' : null}
+                    />
+                    <Step
+                      state={!steps.duplicateCheck ? 'todo' : steps.duplicateCheck.codes.some((c) => c !== huf.clientCode) && !onNse ? 'failed' : 'done'}
+                      title="Duplicate check on NSE"
+                      detail={steps.duplicateCheck ? (steps.duplicateCheck.codes.length ? `NSE already has this PAN as ${steps.duplicateCheck.codes.join(', ')}` : 'No other client code for this PAN') : null}
+                    />
+                  </>
+                )}
                 <Step state={nseStepState(steps.ucc)} title="Client registered on NSE (UCC)" detail={steps.ucc?.remark ?? (steps.ucc?.ok ? formatDateTime(steps.ucc.at) : null)} />
                 <Step state={nseStepState(steps.fatca)} title="FATCA, with the karta as beneficial owner" detail={steps.fatca?.remark} />
                 <Step
@@ -174,7 +184,7 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
                 <Row label="Place formed" value={d.placeOfFormation} />
                 <Row label="Nature of business" value={d.natureOfBusiness} />
                 <Row label="Net worth" value={`₹${d.netWorthLakhs} lakh, as on ${d.netWorthDate ? formatDate(d.netWorthDate) : '—'}`} />
-                <Row label="Karta" value={`${d.karta.name} · ${d.karta.pan}`} />
+                <Row label="Karta" value={d.karta.name ? `${d.karta.name}${d.karta.pan ? ` · ${d.karta.pan}` : ''}` : 'Not on NSE’s record (FATCA was sent without a beneficial owner)'} />
                 <Row label="Karta's email" value={d.email} />
                 <Row label="Karta's mobile" value={d.mobile} />
                 <Row label="Bank account" value={`${d.bankHolderName} · ${d.accountNo} · ${d.ifsc}`} />

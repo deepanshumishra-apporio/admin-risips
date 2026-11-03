@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { NoAccess } from '@/components/ui/no-access';
 import { Table, Td } from '@/components/ui/table';
+import { SyncAction } from '@/features/hufs/components/huf-actions';
 import { HufStatusLabel, HufStatusTone, HufViews, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
 import { getHufOptions, listHufs } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
@@ -62,6 +63,16 @@ export default async function HufsPage({ searchParams }: HufsPageProps): Promise
         </p>
       ) : null}
 
+      {options.nse.configured ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-[13px] text-ink-muted">
+          <SyncAction />
+          <span>
+            Adds HUFs registered on NSE directly, e.g. on its portal. Runs by itself once a day
+            {options.lastSyncAt ? `; last ${timeAgo(options.lastSyncAt)}` : ''}.
+          </span>
+        </div>
+      ) : null}
+
       <Card>
         <nav aria-label="HUF views" className="flex flex-wrap gap-2 px-6 pt-5 pb-4">
           {HufViews.map((v) => (
@@ -93,9 +104,10 @@ export default async function HufsPage({ searchParams }: HufsPageProps): Promise
                   <Link href={`/onboarding/hufs/${h.id}`} className="font-semibold text-ink group-hover:text-brand">
                     {h.hufName}
                   </Link>
+                  {h.source === 'NSE' ? <Badge tone="neutral" className="ml-2">On NSE directly</Badge> : null}
                   <span className="tabular block text-[12px] text-ink-muted">{h.pan}</span>
                 </Td>
-                <Td>{h.kartaName}</Td>
+                <Td>{h.kartaName || '—'}</Td>
                 <Td className="tabular">{h.clientCode}</Td>
                 <Td>
                   <Badge tone={HufStatusTone[h.status]}>{HufStatusLabel[h.status]}</Badge>
