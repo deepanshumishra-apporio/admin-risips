@@ -1081,6 +1081,55 @@ export type HufScheme = {
   launchedOn: string | null;
   openEnded: boolean | null;
   settlement: string | null;
+  /** From AMFI's NAV file, matched by ISIN; null when AMFI doesn't list it. */
+  amfiCode?: string | null;
+  /** AMFI's name for the fund, in its own case (NSE's is all capitals). */
+  displayName?: string | null;
+  assetClass?: string | null;
+  category?: string | null;
+  structure?: string | null;
+  planName?: 'Direct' | 'Regular';
+  option?: 'Growth' | 'IDCW';
+};
+
+export type HufFacet = { name: string; count: number };
+
+/** GET /hufs/funds: every fund open for purchase on NSE, filtered and paged. */
+export type HufFundList = {
+  items: HufScheme[];
+  total: number;
+  page: number;
+  pageSize: number;
+  catalogue: number;
+  categorised: boolean;
+  facets: { assetClasses: HufFacet[]; categories: HufFacet[]; fundHouses: HufFacet[]; plans: HufFacet[]; options: HufFacet[] };
+};
+
+export type HufFundQuery = {
+  search?: string;
+  assetClass?: string;
+  category?: string;
+  fundHouse?: string;
+  plan?: string;
+  option?: string;
+  sip?: '1';
+  page?: number;
+  limit?: number;
+};
+
+/** [ISO date, NAV], oldest first. */
+export type HufNavPoint = [string, number];
+
+export type HufNavHistory = {
+  amfiCode: string | null;
+  points: HufNavPoint[];
+  returns: {
+    periods: { key: string; label: string; percent: number | null; annualised: boolean }[];
+    sinceLaunch: { percent: number; annualised: boolean; from: string } | null;
+    high52: { nav: number; date: string } | null;
+    low52: { nav: number; date: string } | null;
+  };
+  error: string | null;
 };
 
 export type HufInvestments = {

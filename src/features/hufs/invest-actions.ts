@@ -27,8 +27,8 @@ async function send(form: FormData, path: string, body: unknown, done: string): 
     if (error instanceof ApiError) return { error: error.message };
     throw error;
   }
-  revalidatePath(`/onboarding/hufs/${id}`);
-  revalidatePath(`/onboarding/hufs/${id}/investments`);
+  // The HUF's page and everything under it: portfolio, funds, invest steps, mandate.
+  revalidatePath(`/onboarding/hufs/${id}`, 'layout');
   const latest = view.requests[0];
   return { error: null, done: latest?.nseId ? `${done} NSE reference ${latest.nseId}.` : done, link: latest?.link ?? null };
 }

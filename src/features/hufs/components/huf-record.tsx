@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronRight, Circle, Plus, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Circle, LayoutGrid, Plus, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -148,15 +148,24 @@ export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvest
           <RefreshInvestments hufId={hufId} />
           <span>{view.readAt ? `Read from NSE ${timeAgo(view.readAt)}; again once a day on its own.` : 'Not read from NSE yet.'}</span>
         </div>
-        {view.block ? null : (
+        <div className="flex flex-wrap gap-2">
           <Link
-            href={`/onboarding/hufs/${hufId}/invest`}
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-3.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-strong"
+            href={`/onboarding/hufs/${hufId}/funds`}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-surface px-3.5 text-[13.5px] font-medium text-ink transition-colors hover:bg-surface-sunken"
           >
-            <Plus className="size-4" />
-            Invest
+            <LayoutGrid className="size-4" />
+            All mutual funds
           </Link>
-        )}
+          {view.block ? null : (
+            <Link
+              href={`/onboarding/hufs/${hufId}/invest`}
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-3.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-strong"
+            >
+              <Plus className="size-4" />
+              Invest
+            </Link>
+          )}
+        </div>
       </div>
       {view.block ? <p className="rounded-md border border-warn/25 bg-warn-soft px-4 py-2.5 text-[13px] text-warn">Can&apos;t invest yet: {view.block}</p> : null}
 

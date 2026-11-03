@@ -2,7 +2,9 @@ import 'server-only';
 
 import { apiRequest } from '@/lib/api/client';
 import { authedRequest } from '@/lib/auth/session';
-import type { HufConsentView, HufDetail, HufInvestmentsView, HufList, HufOptions, HufScheme, HufStatus } from '@/types/admin-api.types';
+import type {
+  HufConsentView, HufDetail, HufFundList, HufFundQuery, HufInvestmentsView, HufList, HufNavHistory, HufOptions, HufScheme, HufStatus,
+} from '@/types/admin-api.types';
 
 export function listHufs(query: { status?: HufStatus[]; search?: string; cursor?: string; limit?: number } = {}): Promise<HufList> {
   return authedRequest('/hufs', { query });
@@ -33,4 +35,14 @@ export function searchHufSchemes(search: string): Promise<HufScheme[]> {
 /** One fund as NSE's masters describe it. */
 export function getHufScheme(code: string): Promise<HufScheme> {
   return authedRequest(`/hufs/schemes/${encodeURIComponent(code)}`);
+}
+
+/** Every fund open for purchase on NSE, with AMFI's categories, filtered and paged. */
+export function listHufFunds(query: HufFundQuery): Promise<HufFundList> {
+  return authedRequest('/hufs/funds', { query });
+}
+
+/** A fund's NAV history and returns, from AMFI's NAVs. */
+export function getHufSchemeHistory(code: string): Promise<HufNavHistory> {
+  return authedRequest(`/hufs/schemes/${encodeURIComponent(code)}/history`);
 }

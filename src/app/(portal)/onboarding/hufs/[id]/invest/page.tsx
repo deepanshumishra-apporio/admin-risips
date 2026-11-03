@@ -1,18 +1,17 @@
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/page-header';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
-import { MandateForm, PurchaseForm, SipForm } from '@/features/hufs/components/invest-forms';
+import { FundExplorer, fundName, fundQueryOf, pageHrefOf } from '@/features/hufs/components/fund-explorer';
+import { InvestSteps } from '@/features/hufs/components/invest-wizard';
+import { fundsOf, inr } from '@/features/hufs/portfolio';
 import { ApiError } from '@/lib/api/errors';
-import { getHuf, getHufInvestments, searchHufSchemes } from '@/lib/api/hufs';
+import { getHuf, getHufInvestments, listHufFunds } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
-import type { HufDetail, HufInvestmentsView, HufScheme } from '@/types/admin-api.types';
-import { cn } from '@/utils/cn';
+import type { HufDetail, HufFundList, HufInvestmentsView } from '@/types/admin-api.types';
 
 export const metadata: Metadata = { title: 'Invest for a HUF · RiSips Admin' };
 
@@ -21,11 +20,9 @@ type InvestPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] ?? '' : v ?? '').trim();
-
 /**
- * Invest for a HUF: find the scheme, then a lumpsum purchase or a monthly SIP. Search and choice live in the URL;
- * each submit goes to NSE, which then asks the karta to confirm.
+ * Step 1 of investing for a HUF: choose the fund, from those it already holds or from every fund open for purchase
+ * on NSE. The amount, review and NSE's link for the karta follow on the fund's own step.
  */
 export default async function HufInvestPage({ params, searchParams }: InvestPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
@@ -38,10 +35,11 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
     );
   }
   const sp = await searchParams;
-  const q = first(sp['q']).slice(0, 80);
-  const chosenCode = first(sp['scheme']).toUpperCase();
-  const tab = first(sp['tab']) === 'sip' ? 'sip' : 'lumpsum';
+  // Old links chose the fund in the query.
+  const legacy = typeof sp['scheme'] === 'string' ? sp['scheme'] : '';
+  if (legacy) redirect(`/onboarding/hufs/${id}/invest/${encodeURIComponent(legacy)}${sp['tab'] === 'sip' ? '?type=sip' : ''}`);
 
+  const { values, query } = fundQueryOf(sp);
   let huf: HufDetail;
   let view: HufInvestmentsView;
   try {
@@ -50,19 +48,18 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
     if (error instanceof ApiError && error.isNotFound) notFound();
     throw error;
   }
-  let results: HufScheme[] = [];
-  let searchError: string | null = null;
-  try {
-    results = q.length >= 3 ? await searchHufSchemes(q) : [];
-  } catch (error) {
-    if (!(error instanceof ApiError)) throw error;
-    searchError = error.message;
+  let list: HufFundList | null = null;
+  let listError: string | null = null;
+  if (!view.block) {
+    try {
+      list = await listHufFunds(query);
+    } catch (error) {
+      if (!(error instanceof ApiError)) throw error;
+      listError = error.message;
+    }
   }
-  let chosen = results.find((s) => s.schemeCode === chosenCode) ?? null;
-  if (!chosen && chosenCode) chosen = (await searchHufSchemes(chosenCode).catch(() => [])).find((s) => s.schemeCode === chosenCode) ?? null;
-  const href = (change: Record<string, string>) => `/onboarding/hufs/${id}/invest?${new URLSearchParams({ q, ...(chosen && { scheme: chosen.schemeCode }), tab, ...change }).toString()}`;
-  const folios = chosen ? view.folios.filter((f) => f.schemeCode === chosen!.schemeCode).map((f) => f.folio) : [];
-  const held = new Set((view.investments?.holdings ?? []).map((h) => h.schemeCode));
+  const held = view.investments ? fundsOf(view.investments).filter((f) => f.units > 0) : [];
+  const base = `/onboarding/hufs/${id}/invest`;
 
   return (
     <>
@@ -72,128 +69,48 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
       </Link>
       <PageHeader
         title="Invest"
-        description={`For ${huf.hufName} (${huf.clientCode})${view.live ? ', on NSE’s live account' : ''}. Every order and SIP needs the karta’s OTP; money comes only from the HUF’s own bank account.`}
+        description={`For ${huf.hufName} (${huf.clientCode})${view.live ? ', on NSE’s live account' : ''}. Every order and SIP needs the karta’s OTP; the money comes only from the HUF’s own bank account.`}
       />
 
       {view.block ? (
         <p className="rounded-md border border-warn/25 bg-warn-soft px-4 py-2.5 text-[13px] text-warn">Can&apos;t invest yet: {view.block}</p>
       ) : (
-        <div className="grid max-w-4xl gap-4">
-          <Card>
-            <CardHeader title="1. Scheme" subtitle={chosen ? chosen.name : 'Search NSE’s scheme master by name, code or ISIN'} />
-            <CardBody>
-              <form method="get" action={`/onboarding/hufs/${id}/invest`} className="flex gap-2">
-                <input type="hidden" name="tab" value={tab} />
-                <span className="relative flex-1">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" />
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    minLength={3}
-                    maxLength={80}
-                    placeholder="e.g. nippon nifty 50, parag parikh flexi"
-                    className="h-9 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[13.5px] text-ink focus:border-brand focus:ring-3 focus:ring-brand/12 focus:outline-none"
-                  />
-                </span>
-                <button type="submit" className="h-9 rounded-md border border-line-strong bg-surface px-4 text-[13.5px] font-medium text-ink hover:bg-surface-sunken">
-                  Search
-                </button>
-              </form>
-              {searchError ? <p className="mt-3 text-[13px] text-danger">{searchError}</p> : null}
-              {q.length >= 3 && !searchError ? (
-                results.length ? (
-                  <ul className="mt-3 max-h-80 divide-y divide-line overflow-y-auto rounded-lg border border-line">
-                    {results.map((s) => (
-                      <li key={s.schemeCode}>
-                        <Link
-                          href={href({ scheme: s.schemeCode })}
-                          className={cn('flex items-center justify-between gap-3 px-3 py-2 text-[13px] hover:bg-surface-sunken', chosen?.schemeCode === s.schemeCode && 'bg-brand-soft')}
-                        >
-                          <span className="min-w-0">
-                            <span className="flex items-center gap-2">
-                              <span className="truncate font-medium text-ink">{s.name}</span>
-                              {held.has(s.schemeCode) ? <Badge tone="success">Held</Badge> : null}
-                            </span>
-                            <span className="tabular text-[12px] text-ink-muted">
-                              {s.schemeCode} · {s.type} · min ₹{s.minFresh ?? '—'}{s.sipMonthly ? ` · SIP from ₹${s.sipMonthly.minAmount ?? '—'}` : ''}
-                            </span>
-                          </span>
-                          <span className="tabular shrink-0 text-[12px] text-ink-soft">{s.nav ? `NAV ${s.nav}` : ''}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-[13px] text-ink-muted">No scheme open for purchase matches “{q}”.</p>
-                )
-              ) : null}
-            </CardBody>
-          </Card>
-
-          {chosen ? (
-            <Card>
-              <CardHeader
-                title="2. How"
-                subtitle={chosen.name}
-                action={
-                  <Link href={`/onboarding/hufs/${id}/funds/${encodeURIComponent(chosen.schemeCode)}`} className="text-[12.5px] font-semibold text-brand hover:text-brand-deep">
-                    About this fund
-                  </Link>
-                }
-              />
-              <CardBody className="space-y-4">
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-surface-sunken p-3 text-[12.5px] sm:grid-cols-4">
-                  {([
-                    ['NAV', chosen.nav ? `₹${chosen.nav}${chosen.navDate ? ` (${chosen.navDate})` : ''}` : '—'],
-                    ['First purchase from', chosen.minFresh ? `₹${chosen.minFresh.toLocaleString('en-IN')}` : '—'],
-                    ['Cut-off', chosen.cutoff || '—'],
-                    ['Monthly SIP', chosen.sipMonthly ? `from ₹${(chosen.sipMonthly.minAmount ?? 0).toLocaleString('en-IN')}` : 'Not offered'],
-                  ] as const).map(([label, value]) => (
-                    <div key={label}>
-                      <dt className="text-ink-muted">{label}</dt>
-                      <dd className="font-medium text-ink">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <nav className="flex gap-2">
-                  {(['lumpsum', 'sip'] as const).map((t) => (
+        <>
+          <InvestSteps current={1} />
+          {held.length ? (
+            <section className="mb-6">
+              <h2 className="mb-2 text-[13px] font-semibold text-ink">Add to a fund the HUF holds</h2>
+              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {held.map((f) => (
+                  <li key={f.schemeCode}>
                     <Link
-                      key={t}
-                      href={href({ tab: t })}
-                      aria-current={tab === t ? 'page' : undefined}
-                      className={cn(
-                        'rounded-full border px-3.5 py-1.5 text-[13px] font-medium',
-                        tab === t ? 'border-brand bg-brand-soft text-brand-deep' : 'border-line-strong text-ink-soft hover:bg-surface-sunken',
-                      )}
+                      href={`${base}/${encodeURIComponent(f.schemeCode)}`}
+                      className="group flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-brand/40 hover:bg-brand-soft/40"
                     >
-                      {t === 'lumpsum' ? 'Lumpsum' : 'Monthly SIP'}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-semibold text-ink group-hover:text-brand">{fundName({ name: f.schemeName })}</span>
+                        <span className="tabular block text-[12px] text-ink-muted">Worth {inr(f.value ?? f.invested)}</span>
+                      </span>
+                      <ChevronRight className="size-4 text-ink-muted group-hover:text-brand" />
                     </Link>
-                  ))}
-                </nav>
-                {tab === 'lumpsum' ? (
-                  <PurchaseForm hufId={id} scheme={chosen} folios={folios} live={view.live} />
-                ) : (
-                  <SipForm hufId={id} scheme={chosen} mandates={view.approvedMandates} live={view.live} />
-                )}
-              </CardBody>
-            </Card>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
-
-          {tab === 'sip' ? (
-            <Card>
-              <CardHeader
-                title="Mandate"
-                subtitle={view.approvedMandates.length ? `${view.approvedMandates.length} approved. Register another only if you need a higher limit.` : 'A SIP needs an eNACH mandate on the HUF’s account, approved by the karta with their bank.'}
-              />
-              <CardBody>
-                <MandateForm hufId={id} />
-                <p className="mt-3 text-[12px] text-ink-muted">
-                  Once the karta approves it, refresh the HUF&apos;s investments: it then shows here as approved. Some banks don&apos;t support eNACH (e.g. Jio Payments Bank, Nainital Bank).
-                </p>
-              </CardBody>
-            </Card>
-          ) : null}
-        </div>
+          <h2 className="mb-2 text-[13px] font-semibold text-ink">{held.length ? 'Or choose any fund' : 'Choose a fund'}</h2>
+          {list ? (
+            <FundExplorer
+              list={list}
+              values={values}
+              hrefFor={(code) => `${base}/${encodeURIComponent(code)}`}
+              pageHref={pageHrefOf(base, values)}
+              held={new Set(held.map((f) => f.schemeCode))}
+            />
+          ) : (
+            <p className="rounded-md border border-danger/25 bg-danger-soft px-4 py-2.5 text-[13px] text-danger">NSE&apos;s fund list couldn&apos;t be read: {listError}</p>
+          )}
+        </>
       )}
     </>
   );
