@@ -10,6 +10,7 @@ import { NoAccess } from '@/components/ui/no-access';
 import {
   ApproveAction, CancelAction, ConsentLinkAction, MarkActiveAction, RefreshAction, ResendAction,
 } from '@/features/hufs/components/huf-actions';
+import { HufDocuments } from '@/features/hufs/components/huf-documents';
 import { HufEventLabel, HufStatusLabel, HufStatusTone, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
 import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufOptions } from '@/lib/api/hufs';
@@ -146,6 +147,8 @@ export default async function HufPage({ params }: { params: Promise<{ id: string
               </ol>
             </CardBody>
           </Card>
+
+          <HufDocuments huf={huf} />
 
           {nse?.fatca ? (
             <Card>

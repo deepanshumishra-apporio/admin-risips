@@ -22,6 +22,8 @@ const SecurityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // A HUF's signed documents (up to 3 MB each) go through a server action. Vercel caps a request at 4.5 MB.
+  experimental: { serverActions: { bodySizeLimit: '4mb' } },
   async redirects() {
     // Sub-admins became Staff, backed by the API.
     return [{ source: '/sub-admins', destination: '/staff', permanent: true }];

@@ -147,6 +147,23 @@ export async function cancelHuf(_previous: HufActionState, form: FormData): Prom
   return act(form, 'cancel', 'Cancelled.');
 }
 
+/** NSE accepts these; the API checks the file really is one. */
+const DocumentTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/tiff']);
+const MaxDocumentBytes = 3 * 1024 * 1024;
+
+/** A signed document (AOF, FATCA form, cancelled cheque), passed to NSE through the API. It isn't kept here. */
+export async function uploadHufDocument(_previous: HufActionState, form: FormData): Promise<HufActionState> {
+  const id = text(form, 'id');
+  const kind = text(form, 'kind');
+  const file = form.get('file');
+  if (!Uuid.test(id)) return { error: 'That HUF could not be found.' };
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose the scanned file first.' };
+  if (!DocumentTypes.has(file.type)) return { error: 'Upload a PDF, JPG, PNG or TIFF.' };
+  if (file.size > MaxDocumentBytes) return { error: 'The file is over 3 MB. Scan it at a lower resolution, or as a PDF.' };
+  const data = Buffer.from(await file.arrayBuffer()).toString('base64');
+  return act(form, 'documents', 'Sent to NSE.', { kind, contentType: file.type, data });
+}
+
 // --- the karta's consent page (no staff session) -----------------------------------------
 
 export type ConsentState = { error: string | null; view?: HufConsentView };

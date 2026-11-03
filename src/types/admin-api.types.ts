@@ -950,6 +950,21 @@ export type HufDetailsInput = {
 };
 
 export type HufRegistrarStatus = { status: 'NOT_SENT' | 'PENDING' | 'ACCEPTED' | 'REJECTED'; remark: string | null };
+
+export const HufDocumentKinds = ['AOF', 'FATCA_FORM', 'CANCELLED_CHEQUE'] as const;
+export type HufDocumentKind = (typeof HufDocumentKinds)[number];
+/** The last copy sent to NSE. The file isn't kept: only what identifies it, and NSE's answer. */
+export type HufDocument = {
+  ok: boolean;
+  status: string;
+  remark: string | null;
+  fileName: string;
+  contentType: string;
+  bytes: number;
+  sha256: string;
+  uploadedAt: string;
+  uploadedBy: string;
+};
 export type HufNseStep = { ok: boolean; status: string; remark: string | null; at: string } | null;
 
 export type HufListItem = {
@@ -979,8 +994,12 @@ export type HufDetail = HufListItem & {
     bankRemark: string | null;
     fatca: { cams: HufRegistrarStatus; kfin: HufRegistrarStatus } | null;
     authorised: boolean | null;
+    /** The signed AOF at CAMS and KFin; null until one is uploaded. */
+    aof?: { cams: HufRegistrarStatus; kfin: HufRegistrarStatus; uploadedAt: string | null } | null;
     checkedAt: string;
   } | null;
+  documents: Partial<Record<HufDocumentKind, HufDocument>>;
+  canUploadDocuments: boolean;
   authLink: string | null;
   authLinkError: string | null;
   lastError: string | null;
