@@ -44,6 +44,10 @@ export function AlertTable({ alerts }: { alerts: ComplianceAlertItem[] }): React
               <Link href={`/investors/${alert.investor.id}`} className="block truncate text-[13px] text-ink hover:text-brand">
                 {alert.investor.name ?? 'Unnamed investor'}
               </Link>
+            ) : alert.entity?.type === 'huf' ? (
+              <Link href={`/onboarding/hufs/${alert.entity.id}`} className="block truncate text-[13px] text-ink hover:text-brand">
+                HUF on NSE
+              </Link>
             ) : (
               <span className="text-ink-muted">—</span>
             )}

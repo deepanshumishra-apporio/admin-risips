@@ -5,7 +5,7 @@ import type { ComplianceKind, ComplianceListQuery, ComplianceSeverity, Complianc
 export const ComplianceKinds: readonly ComplianceKind[] = [
   'MONITORING_STALE', 'PAID_NOT_ALLOTTED', 'REDEMPTION_PAYOUT_PENDING', 'REFUND_PENDING', 'CONSENT_MISSING',
   'MANDATE_REJECTED', 'SIP_FAILURES', 'ORDER_STUCK', 'COMPLAINT_OVERDUE', 'KYC_NOT_COMPLIANT', 'KYC_STALLED', 'KYC_FAILED', 'FATCA_REJECTED',
-  'PEP_INVESTOR', 'LARGE_TRANSACTION', 'RAPID_ROUND_TRIP', 'MANDATE_PENDING', 'PAYOUT_BANK_UNVERIFIED', 'CONTACT_MISSING', 'NOMINEE_MISSING',
+  'PEP_INVESTOR', 'LARGE_TRANSACTION', 'RAPID_ROUND_TRIP', 'MANDATE_PENDING', 'AOF_MISSING', 'PAYOUT_BANK_UNVERIFIED', 'CONTACT_MISSING', 'NOMINEE_MISSING',
 ];
 
 export const KindLabel: Record<ComplianceKind, string> = {
@@ -29,30 +29,32 @@ export const KindLabel: Record<ComplianceKind, string> = {
   CONTACT_MISSING: 'Contact details missing',
   MONITORING_STALE: 'Monitoring stopped',
   FATCA_REJECTED: 'FATCA rejected',
+  AOF_MISSING: 'HUF AOF missing',
 };
 
-/** What each check looks for, so a reviewer can tell why something is on the queue. */
+/** What each check looks for, as the scan actually does it, so a reviewer can tell why something is on the queue. */
 export const KindRule: Record<ComplianceKind, string> = {
-  KYC_STALLED: 'A KYC form that has not moved for 2 days (high after 7).',
-  KYC_FAILED: 'KYC failed at the KRA, expired, or the PAN check did not pass.',
-  SIP_FAILURES: 'An active SIP whose last 2 or more instalments failed in a row (high at 3).',
-  MANDATE_REJECTED: 'The bank rejected an AutoPay mandate that a live SIP depends on.',
-  MANDATE_PENDING: 'An AutoPay mandate left unauthorised for 3 days (medium when a SIP depends on it).',
-  PAID_NOT_ALLOTTED: 'A purchase whose payment succeeded over an hour ago but never moved on.',
-  ORDER_STUCK: 'Confirmed a day ago and not submitted, or with the RTA for over 3 days.',
-  NOMINEE_MISSING: 'Holdings with no nomination and no opt-out declaration on the account or its folios.',
-  REDEMPTION_PAYOUT_PENDING: 'A successful redemption with no payout (payment date or UTR) recorded after 5 days. SEBI: proceeds within 3 working days.',
-  REFUND_PENDING: 'A purchase that failed after its payment succeeded, with no completed refund after 3 days.',
-  CONSENT_MISSING: 'An order or plan past review with no SEBI 2FA consent recorded. Review: stays open until a person closes it.',
-  KYC_NOT_COMPLIANT: "An investor with an account whose latest KRA check no longer passes (high when they hold units).",
-  PEP_INVESTOR: 'A politically exposed person, or a relative of one: PMLA enhanced due diligence. Review: stays open until a person closes it.',
-  LARGE_TRANSACTION: 'A single purchase or redemption at or above the review threshold (₹10 lakh by default), last 90 days. Review alert.',
-  RAPID_ROUND_TRIP: 'Units redeemed within 30 days of buying the same scheme, last 90 days. Review alert.',
-  COMPLAINT_OVERDUE: 'A support ticket past its response deadline (high once open 21 days, the SEBI timeline).',
-  PAYOUT_BANK_UNVERIFIED: 'Holdings whose payout bank account is missing or has not passed verification.',
-  CONTACT_MISSING: 'Holdings with no communication email or mobile on the account.',
-  MONITORING_STALE: 'The data the other checks read has stopped updating, so they may be missing problems.',
-  FATCA_REJECTED: 'CAMS or KFin rejected the FATCA declaration NSE passed on (for a HUF, usually the missing karta UBO details). Allotments can be held up.',
+  KYC_STALLED: 'KYC not finished 3 days after sign-up.',
+  KYC_FAILED: 'The KRA (PAN) check came back as anything but verified. Checked every 6 hours.',
+  SIP_FAILURES: 'A SIP with 2 or more failed instalments, or whose first payment failed.',
+  MANDATE_REJECTED: 'HUFs onboarded here: the bank rejected an eNACH mandate, so its SIPs can’t debit. (Investors’ mandates aren’t in the app data yet.)',
+  MANDATE_PENDING: 'HUFs onboarded here: an eNACH mandate registered over 3 days ago and still not approved by the bank.',
+  PAID_NOT_ALLOTTED: 'A purchase whose payment succeeded and that is still pending, confirmed or submitted 2 days later.',
+  ORDER_STUCK: 'An unpaid order confirmed a day ago and not submitted, or with the registrar for over 3 days.',
+  NOMINEE_MISSING: 'An onboarded investor with no nominee and no opt-out (HUFs can’t nominate). Checked every 6 hours.',
+  REDEMPTION_PAYOUT_PENDING: 'Not checked yet: needs the redemption’s payout date or UTR from the app. SEBI: proceeds within 3 working days.',
+  REFUND_PENDING: 'A purchase that failed after its payment succeeded: the investor is owed a refund.',
+  CONSENT_MISSING: 'Not checked yet: needs each order’s SEBI 2FA consent from the app.',
+  KYC_NOT_COMPLIANT: 'Not checked yet: needs the investor’s latest KRA status (on hold, rejected, re-KYC due) from the app.',
+  PEP_INVESTOR: 'Not checked yet: needs a politically-exposed flag from onboarding (PMLA enhanced due diligence).',
+  LARGE_TRANSACTION: 'A single purchase or redemption of ₹5 lakh or more (LARGE_TRANSACTION_AMOUNT on the server). Review under the AML policy.',
+  RAPID_ROUND_TRIP: 'Units redeemed within 7 days of buying the same fund.',
+  COMPLAINT_OVERDUE: 'A support ticket still open after its SLA deadline. Checked every 6 hours.',
+  PAYOUT_BANK_UNVERIFIED: 'NSE’s bank check rejected the account (high; for HUFs onboarded here too), or an onboarded investor’s payout bank isn’t verified (medium).',
+  CONTACT_MISSING: 'An onboarded investor with no email or no mobile, so statements and OTPs can’t reach them.',
+  MONITORING_STALE: 'Not checked yet: needs a last-updated time for the app data.',
+  FATCA_REJECTED: 'CAMS or KFin rejected the FATCA declaration NSE passed on (for a HUF, usually the missing karta UBO details). NSE refuses orders until it’s fixed.',
+  AOF_MISSING: 'HUFs onboarded here: NSE has no signed account-opening form (medium), or a registrar rejected it (high). NSE refuses orders without it.',
 };
 
 export const SeverityLabel: Record<ComplianceSeverity, string> = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };

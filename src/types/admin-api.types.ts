@@ -759,7 +759,8 @@ export type ComplianceKind =
   | 'PAYOUT_BANK_UNVERIFIED'
   | 'CONTACT_MISSING'
   | 'MONITORING_STALE'
-  | 'FATCA_REJECTED';
+  | 'FATCA_REJECTED'
+  | 'AOF_MISSING';
 export type ComplianceSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
 export type ComplianceStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
 
@@ -771,7 +772,7 @@ export type ComplianceAlertItem = {
   title: string;
   detail: string;
   investor: SupportInvestor | null;
-  entity: { type: 'order' | 'plan' | 'mandate' | 'account' | 'ticket'; id: string } | null;
+  entity: { type: 'order' | 'plan' | 'mandate' | 'account' | 'ticket' | 'huf'; id: string } | null;
   assignee: StaffRef | null;
   firstDetectedAt: string;
   lastDetectedAt: string;
@@ -794,6 +795,10 @@ export type ComplianceSummary = {
   ageingOver7Days: number;
   unassigned: number;
   byKind: { key: ComplianceKind; label: string; count: number }[];
+  /** Kinds no check raises yet, and the app data each needs. */
+  notChecked?: { key: ComplianceKind; label: string; needs: string }[];
+  /** Kinds checked only for HUFs onboarded in the admin. */
+  hufOnly?: ComplianceKind[];
   resolvedLast30Days: number;
   medianHoursToClose: number | null;
   lastScanAt: string | null;
