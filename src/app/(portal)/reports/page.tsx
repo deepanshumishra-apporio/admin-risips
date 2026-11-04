@@ -1,4 +1,4 @@
-import { ArrowLeftRight, BadgeCheck, ChevronRight, CreditCard, PieChart, Repeat, ShieldAlert, Users } from 'lucide-react';
+import { ArrowLeftRight, BadgeCheck, ChevronRight, CreditCard, PieChart, Repeat, ShieldAlert, TrendingUp, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ export default async function ReportsPage(): Promise<React.JSX.Element> {
   const header = (
     <PageHeader
       title="Reports"
-      description="Run a report on screen, then download it as CSV. PANs, phones and emails are masked, and every export is logged."
+      description="Run a report on screen, then download it (CSV; Excel or PDF for fund returns). PANs, phones and emails are masked, and every export is logged."
     />
   );
   if (!(await hasPermission('reports.read'))) {
@@ -72,6 +72,23 @@ export default async function ReportsPage(): Promise<React.JSX.Element> {
             </Link>
           );
         })}
+        <Link href="/reports/fund-returns" className="group">
+          <Card className="flex h-full flex-col p-4 transition-colors group-hover:border-brand/40">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-deep">
+                <TrendingUp className="size-4.5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-ink group-hover:text-brand">Fund returns by AMC</h2>
+                <p className="mt-1 text-[13px] text-ink-muted">1 month to 10 year returns of every mutual fund, by AMC or fund by fund, from AMFI&apos;s daily NAVs.</p>
+              </div>
+            </div>
+            <div className="mt-auto flex items-center justify-between pt-4 text-[12px] text-ink-muted">
+              <span>Multi-select filters · Excel and PDF</span>
+              <ChevronRight className="size-4 text-ink-muted group-hover:text-brand" />
+            </div>
+          </Card>
+        </Link>
       </div>
     </>
   );

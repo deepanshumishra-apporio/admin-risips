@@ -1178,3 +1178,31 @@ export type HufInvestmentsView = {
   approvedMandates: { mandateId: string; amount: number | null; endDate: string | null; bankName: string | null }[];
   folios: { schemeCode: string; folio: string }[];
 };
+
+// --- Fund returns by AMC report ---------------------------------------------------------------------------------
+
+export type FundReturnPeriod = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | '10Y';
+export type FundReturnFilterKey = 'fundHouse' | 'assetClass' | 'category' | 'plan' | 'option' | 'structure';
+
+export type FundReturnsQuery = {
+  filters: Partial<Record<FundReturnFilterKey, string[]>>;
+  group: 'amc' | 'fund';
+  sort: string;
+  dir: 'asc' | 'desc';
+};
+
+/** GET /reports/fund-returns: every fund's 1M-10Y returns from AMFI, by AMC or fund by fund. */
+export type FundReturnsReport = {
+  asOf: string;
+  basis: string;
+  query: FundReturnsQuery;
+  periods: { key: FundReturnPeriod; label: string }[];
+  totalFunds: number;
+  totalAmcs: number;
+  facets: Record<FundReturnFilterKey, { name: string; count: number }[]>;
+  amcs: { fundHouse: string; funds: number; returns: Record<FundReturnPeriod, number | null>; counts: Record<FundReturnPeriod, number> }[] | null;
+  funds:
+    | { amfiCode: string; name: string; fundHouse: string; assetClass: string; category: string; structure: string; plan: string; option: string; nav: number; navDate: string; returns: Record<FundReturnPeriod, number | null> }[]
+    | null;
+  truncated: boolean;
+};

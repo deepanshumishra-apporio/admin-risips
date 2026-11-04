@@ -36,7 +36,7 @@ function resolveLeaf(section: string, segment: string): string {
   }
 
   if (section === 'reports') {
-    return isReportKey(segment) ? ReportName[segment] : 'Report';
+    return isReportKey(segment) ? ReportName[segment] : segment === 'fund-returns' ? 'Fund returns by AMC' : 'Report';
   }
 
   if (section === 'announcements') {
