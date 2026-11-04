@@ -1,10 +1,11 @@
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, FileSpreadsheet, FileText, TriangleAlert } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, TriangleAlert } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
+import { DownloadMenu } from '@/features/reports/components/download-menu';
 import { FundReturnsFilters } from '@/features/reports/components/fund-returns-filters';
 import { fundReturnsHref, fundReturnsParams } from '@/features/reports/fund-returns';
 import { ApiError } from '@/lib/api/errors';
@@ -84,17 +85,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
         description="Returns over 1 month to 10 years for every mutual fund, from AMFI's daily NAVs. Filter with the dropdowns, sort by any column, then download what you see."
         actions={
           report && report.totalFunds > 0 ? (
-            <>
-              {/* Plain links: the browser downloads the file itself, through this server. */}
-              <a href={download('xlsx')} className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-3.5 text-[13.5px] font-medium text-white hover:bg-brand-strong">
-                <FileSpreadsheet className="size-4" />
-                Excel
-              </a>
-              <a href={download('pdf')} className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-surface px-3.5 text-[13.5px] font-medium text-ink hover:bg-surface-sunken">
-                <FileText className="size-4" />
-                PDF
-              </a>
-            </>
+            <DownloadMenu hrefFor={{ xlsx: download('xlsx'), pdf: download('pdf') }} />
           ) : undefined
         }
       />
@@ -137,7 +128,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
                   {report.amcs?.map((r, i) => (
                     <tr key={r.fundHouse} className="hover:bg-surface-sunken">
                       <td className="tabular px-3 py-2 text-ink-muted">{i + 1}</td>
-                      <td className="px-3 py-2 font-medium text-ink">{r.fundHouse}</td>
+                      <td className="px-3 py-2 font-medium whitespace-nowrap text-ink">{r.fundHouse}</td>
                       <td className="tabular px-3 py-2 text-right text-ink-soft">{r.funds}</td>
                       {report.periods.map((p) => (
                         <td key={p.key} className={cn('tabular px-3 py-2 text-right font-medium', tone(r.returns[p.key]))} title={`${r.counts[p.key]} of ${r.funds} funds are old enough for ${p.label.toLowerCase()}`}>
