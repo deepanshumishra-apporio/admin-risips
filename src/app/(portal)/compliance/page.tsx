@@ -105,7 +105,7 @@ export default async function CompliancePage({ searchParams }: CompliancePagePro
       {summary.notChecked?.length ? (
         <details className="mb-4 rounded-md border border-warn/25 bg-warn-soft px-4 py-2.5 text-[12.5px] text-warn">
           <summary className="cursor-pointer font-medium">
-            {summary.notChecked.length} alert types aren&apos;t checked yet: the RiSips app doesn&apos;t send the data they need. No alert of these types doesn&apos;t mean none is due.
+            {summary.notChecked.length} alert types can&apos;t be checked yet: neither the RiSips app nor FP has the data. No alert of these types doesn&apos;t mean none is due.
           </summary>
           <ul className="mt-2 list-disc space-y-0.5 pl-5">
             {summary.notChecked.map((n) => (
@@ -113,9 +113,6 @@ export default async function CompliancePage({ searchParams }: CompliancePagePro
                 <span className="font-medium">{KindLabel[n.key] ?? n.label}</span>: needs {n.needs}.
               </li>
             ))}
-            <li>
-              <span className="font-medium">Mandates</span> are checked only for HUFs onboarded here; the app sends no mandates for investors.
-            </li>
           </ul>
         </details>
       ) : null}
