@@ -257,13 +257,19 @@ function PlanView({ plan, onOpen }: { plan: PlanDetail; onOpen: Open }): React.J
         <Section title="Payment">
           <Facts
             rows={[
-              ['Mandate', plan.mandate ? `${humanize(plan.mandate.type)} · ${humanize(plan.mandate.status)}` : 'None linked'],
+              ['Mandate', plan.mandate ? `${humanize(plan.mandate.type)} · ${humanize(plan.mandate.status)}${plan.mandate.umrn ? ` · UMRN ${plan.mandate.umrn}` : ''}` : 'None linked'],
               ['Payment method', plan.paymentMethod ? humanize(plan.paymentMethod) : null],
               ['Purpose', plan.purpose ? humanize(plan.purpose) : null],
               ['Paused', plan.pause ? `${humanize(plan.pause.state)} · ${date(plan.pause.from) ?? '?'} – ${date(plan.pause.to) ?? '?'}` : null],
             ]}
           />
         </Section>
+      ) : null}
+
+      {plan.consentAt ? (
+        <More title="Investor consent (2FA)">
+          <Facts rows={[['Given', dateTime(plan.consentAt)], ['Confirmed with', 'One-time code (OTP)']]} />
+        </More>
       ) : null}
 
       {plan.cancelledAt || plan.cancellationCode || plan.reason || plan.autoCancelled ? (
@@ -349,7 +355,7 @@ function OrderView({ order, onOpen }: { order: OrderDetail; onOpen: Open }): Rea
 
       {order.consent ? (
         <More title="Investor consent (2FA)">
-          <Facts rows={[['Given', dateTime(order.consent.at)], ['Email', order.consent.email], ['Mobile', order.consent.mobile]]} />
+          <Facts rows={[['Given', dateTime(order.consent.at)], ['Confirmed with', order.consent.via === 'otp' ? 'One-time code (OTP)' : humanize(order.consent.via)]]} />
         </More>
       ) : null}
 

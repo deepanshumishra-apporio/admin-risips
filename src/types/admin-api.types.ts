@@ -352,7 +352,7 @@ export type Plan = {
   installmentsPlaced: number;
   installmentsSucceeded: number;
   pause: { state: string | null; from: string | null; to: string | null } | null;
-  mandate: { type: string; status: string } | null;
+  mandate: { type: string; status: string; umrn?: string | null } | null;
   folioNumber: string | null;
   createdAt: string;
   cancelledAt: string | null;
@@ -460,7 +460,8 @@ export type OrderDetail = Order & {
   tradedOn: string | null;
   initiatedBy: string | null;
   initiatedVia: string | null;
-  consent: { at: string; email: string | null; mobile: string | null } | null;
+  /** The investor's 2FA OTP for this order: when, and how (the app never sends the mobile or email it went to). */
+  consent: { at: string; via: string | null } | null;
   payoutAccount: { accountNumber: string; ifsc: string | null } | null;
   plan: { id: string; kind: PlanKind; scheme: string } | null;
   payments: Payment[];
