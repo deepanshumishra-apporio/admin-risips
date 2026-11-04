@@ -64,7 +64,7 @@ export const NavSections: NavSection[] = [
   {
     title: 'Engagement',
     items: [
-      { label: 'Inbox', href: '/notifications', icon: Bell, badge: 4 },
+      { label: 'Inbox', href: '/notifications', icon: Bell },
       { label: 'Announcements', href: '/announcements', icon: Megaphone, permission: 'announcements.manage' },
     ],
   },

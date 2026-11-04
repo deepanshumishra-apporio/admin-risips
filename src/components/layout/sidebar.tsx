@@ -9,6 +9,7 @@ import { sectionsFor } from '@/components/layout/nav-items';
 import { useSidebar } from '@/components/layout/sidebar-state';
 import { Tooltip } from '@/components/ui/tooltip';
 import { signOut } from '@/features/auth/actions';
+import { useUnread } from '@/features/notifications/unread';
 import type { Permission } from '@/types/admin-api.types';
 import { cn } from '@/utils/cn';
 
@@ -18,6 +19,8 @@ export function Sidebar({ permissions }: { permissions: Permission[] }): React.J
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  // The Inbox shows the live unread count the topbar bell reads.
+  const unread = useUnread();
 
   const isActive = (href: string): boolean => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -81,6 +84,7 @@ export function Sidebar({ permissions }: { permissions: Permission[] }): React.J
                 <ul className="mt-0.5 space-y-0.5">
                   {section.items.map((item) => {
                     const active = isActive(item.href);
+                    const badge = item.href === '/notifications' ? (unread > 99 ? '99+' : unread || undefined) : item.badge;
 
                     return (
                       <li key={item.href}>
@@ -102,7 +106,7 @@ export function Sidebar({ permissions }: { permissions: Permission[] }): React.J
                           />
 
                           {collapsed ? (
-                            item.badge ? (
+                            badge ? (
                               <span className="absolute top-1 right-1.5 size-1.5 rounded-full bg-danger" />
                             ) : null
                           ) : (
@@ -113,9 +117,9 @@ export function Sidebar({ permissions }: { permissions: Permission[] }): React.J
                                   Soon
                                 </span>
                               ) : null}
-                              {item.badge ? (
+                              {badge ? (
                                 <span className="tabular rounded-full bg-danger-soft px-1.5 py-0.5 text-[11px] font-semibold text-danger">
-                                  {item.badge}
+                                  {badge}
                                 </span>
                               ) : null}
                             </>

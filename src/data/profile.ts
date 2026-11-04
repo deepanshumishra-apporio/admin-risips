@@ -18,38 +18,32 @@ export const CurrentAdmin: AdminProfile = {
 
 export const DefaultChannelPreferences: ChannelPreference[] = [
   {
-    kind: 'Compliance',
-    description: 'KYC rejections, re-KYC due, nominee declarations outstanding',
-    inApp: true,
-    email: true,
-  },
-  {
-    kind: 'Mandate',
-    description: 'Bounced debits and mandates that need re-registering',
-    inApp: true,
-    email: true,
-  },
-  {
-    kind: 'Agent',
-    description: 'Licence expiries and agents flagged for review',
+    kind: 'HUF',
+    description: 'NSE refusing a registration, order or SIP; FATCA rejected; the karta’s consent given; a HUF waiting on the karta',
     inApp: true,
     email: false,
   },
   {
-    kind: 'Portfolio',
-    description: 'Drafts awaiting publish and allocation guardrail breaches',
+    kind: 'Compliance',
+    description: 'New high and medium compliance alerts: stuck or failed orders, KYC failures, SIP failures',
+    inApp: true,
+    email: false,
+  },
+  {
+    kind: 'Support',
+    description: 'Tickets assigned to you, and yours coming due',
+    inApp: true,
+    email: false,
+  },
+  {
+    kind: 'Mandate',
+    description: 'HUF mandates approved or rejected by the bank',
     inApp: true,
     email: false,
   },
   {
     kind: 'Investor',
-    description: 'Large redemptions, new onboardings, profile changes',
-    inApp: false,
-    email: false,
-  },
-  {
-    kind: 'Meeting',
-    description: 'Upcoming review meetings and notes captured by agents',
+    description: 'The daily sign-up count, and investors ready to invest who haven’t',
     inApp: true,
     email: false,
   },
