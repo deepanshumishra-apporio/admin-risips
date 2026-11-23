@@ -1191,18 +1191,20 @@ export type FundReturnsQuery = {
   dir: 'asc' | 'desc';
 };
 
-/** GET /reports/fund-returns: every fund's 1M-10Y returns from AMFI, by AMC or fund by fund. */
+/** GET /reports/fund-returns: 1M-10Y returns of every fund RiSips sells through FP (from AMFI NAVs), by AMC or fund by fund. */
 export type FundReturnsReport = {
   asOf: string;
+  /** fp: the funds FP sells (normal). amfi: every AMFI fund, while the app backend sends no fund list. Absent from an older admin backend. */
+  source?: 'fp' | 'amfi';
   basis: string;
   query: FundReturnsQuery;
   periods: { key: FundReturnPeriod; label: string }[];
   totalFunds: number;
   totalAmcs: number;
   facets: Record<FundReturnFilterKey, { name: string; count: number }[]>;
-  amcs: { fundHouse: string; funds: number; returns: Record<FundReturnPeriod, number | null>; counts: Record<FundReturnPeriod, number> }[] | null;
+  amcs: { fundHouse: string; funds: number; returns: Record<FundReturnPeriod, number | null>; counts: Record<FundReturnPeriod, number>; since?: string | null }[] | null;
   funds:
-    | { amfiCode: string; name: string; fundHouse: string; assetClass: string; category: string; structure: string; plan: string; option: string; nav: number; navDate: string; returns: Record<FundReturnPeriod, number | null> }[]
+    | { amfiCode: string; isin?: string | null; since?: string | null; name: string; fundHouse: string; assetClass: string; category: string; structure: string; plan: string; option: string; nav: number; navDate: string; returns: Record<FundReturnPeriod, number | null> }[]
     | null;
   truncated: boolean;
 };

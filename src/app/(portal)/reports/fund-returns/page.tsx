@@ -22,6 +22,13 @@ const pct = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : ''}${n.
 const tone = (n: number | null) => (n === null ? 'text-ink-muted' : n < 0 ? 'text-danger' : 'text-success');
 const longDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
+/** Hover text for an AMC's figure: how many funds it averages, or why there is none. */
+function amcCellNote(r: NonNullable<FundReturnsReport['amcs']>[number], key: FundReturnPeriod, label: string): string {
+  const period = label.toLowerCase();
+  if (r.returns[key] !== null) return `Average of ${r.counts[key]} of ${r.funds} funds old enough for ${period}`;
+  return r.since ? `No ${r.fundHouse} fund is ${period} old yet: its oldest NAVs start ${longDate(r.since)}` : `No fund is old enough for ${period}`;
+}
+
 /** A column header that sorts by its period: high to low first, then low to high. */
 function SortHeader({ params, period, label }: { params: Record<string, string>; period: FundReturnPeriod | 'name'; label: string }): React.JSX.Element {
   const active = (params['sort'] ?? 'name') === period;
@@ -82,7 +89,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
       {back}
       <PageHeader
         title="Fund returns by AMC"
-        description="Returns over 1 month to 10 years for every mutual fund, from AMFI's daily NAVs. Filter with the dropdowns, sort by any column, then download what you see."
+        description="Returns over 1 month to 10 years for every fund RiSips sells through FintechPrimitives, worked out from AMFI's daily NAVs. Filter with the dropdowns, sort by any column, then download what you see."
         actions={
           report && report.totalFunds > 0 ? (
             <DownloadMenu hrefFor={{ xlsx: download('xlsx'), pdf: download('pdf') }} />
@@ -108,6 +115,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
                 <span className="tabular font-semibold text-ink">{report.totalFunds.toLocaleString('en-IN')}</span> funds across{' '}
                 <span className="tabular font-semibold text-ink">{report.totalAmcs.toLocaleString('en-IN')}</span> AMCs · NAVs as of {longDate(report.asOf)}
                 {report.truncated ? ' · showing the first 500 funds; the downloads have all' : ''}
+                {report.source === 'amfi' ? ' · the app backend sent no fund list, so this shows every AMFI fund' : ''}
               </p>
             </div>
             <div className="scrollbar-thin overflow-x-auto">
@@ -131,7 +139,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
                       <td className="px-3 py-2 font-medium whitespace-nowrap text-ink">{r.fundHouse}</td>
                       <td className="tabular px-3 py-2 text-right text-ink-soft">{r.funds}</td>
                       {report.periods.map((p) => (
-                        <td key={p.key} className={cn('tabular px-3 py-2 text-right font-medium', tone(r.returns[p.key]))} title={`${r.counts[p.key]} of ${r.funds} funds are old enough for ${p.label.toLowerCase()}`}>
+                        <td key={p.key} className={cn('tabular px-3 py-2 text-right font-medium', tone(r.returns[p.key]))} title={amcCellNote(r, p.key, p.label)}>
                           {pct(r.returns[p.key])}
                         </td>
                       ))}
@@ -142,11 +150,11 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
                       <td className="tabular px-3 py-2 text-ink-muted">{i + 1}</td>
                       <td className="max-w-[22rem] px-3 py-2">
                         <span className="block truncate font-medium text-ink" title={f.name}>{f.name}</span>
-                        <span className="block truncate text-[11.5px] text-ink-muted">{f.fundHouse} · {f.plan} · {f.option}</span>
+                        <span className="block truncate text-[11.5px] text-ink-muted">{f.fundHouse} · {f.plan} · {f.option}{f.isin ? ` · ${f.isin}` : ''}</span>
                       </td>
                       <td className="max-w-[12rem] truncate px-3 py-2 text-ink-soft">{f.category}</td>
                       {report.periods.map((p) => (
-                        <td key={p.key} className={cn('tabular px-3 py-2 text-right font-medium', tone(f.returns[p.key]))}>{pct(f.returns[p.key])}</td>
+                        <td key={p.key} className={cn('tabular px-3 py-2 text-right font-medium', tone(f.returns[p.key]))} title={f.returns[p.key] === null && f.since ? `NAV history from ${longDate(f.since)}` : undefined}>{pct(f.returns[p.key])}</td>
                       ))}
                     </tr>
                   ))}
@@ -159,7 +167,7 @@ export default async function FundReturnsPage({ searchParams }: Props): Promise<
               </table>
             </div>
           </Card>
-          <p className="mt-2 text-[12px] text-ink-muted">{report.basis} A dash means no fund is old enough for that period.</p>
+          <p className="mt-2 text-[12px] text-ink-muted">{report.basis} A dash means no fund is old enough for that period (hover it for the oldest fund's start).</p>
         </>
       )}
     </>
