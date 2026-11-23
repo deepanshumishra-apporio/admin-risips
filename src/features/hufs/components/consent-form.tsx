@@ -14,7 +14,7 @@ function Agreed({ at }: { at: string | null }): React.JSX.Element {
       <div>
         <p className="font-semibold">Thank you. Your consent is recorded{at ? ` (${new Date(at).toLocaleString('en-IN')})` : ''}.</p>
         <p className="mt-1 text-ink-soft">
-          Next, NSE will email and text you a link. Open it and confirm with the OTP to activate the HUF&apos;s account.
+          Next, NSE will email and text you a link. Open it and confirm with the OTP to activate the account.
         </p>
       </div>
     </div>
@@ -35,9 +35,20 @@ export function ConsentForm({ token, view }: { token: string; view: HufConsentVi
       <label className="flex items-start gap-3 rounded-lg border border-line p-4 text-[13.5px] leading-relaxed text-ink">
         <input type="checkbox" name="agree" required className="mt-1 size-4 shrink-0 accent-[var(--color-brand)]" />
         <span>
-          I am the karta of <strong>{current.huf.name}</strong>. The details above are correct. I authorise RiSips to register the HUF
-          with NSE Invest for mutual fund investments, and to submit its FATCA/CRS declaration naming me as the HUF&apos;s beneficial
-          owner. The HUF is resident in India for tax only, and neither I nor the HUF is a politically exposed person.
+          {current.huf.entityType === 'COMPANY' ? (
+            <>
+              I am an authorised signatory of <strong>{current.huf.name}</strong>, authorised by its board to act for it. The details above
+              are correct. I authorise RiSips to register the company with NSE Invest for mutual fund investments, and to submit its
+              FATCA/CRS declaration with the beneficial owners listed above. The company is resident in India for tax only, and none of
+              its beneficial owners is a politically exposed person.
+            </>
+          ) : (
+            <>
+              I am the karta of <strong>{current.huf.name}</strong>. The details above are correct. I authorise RiSips to register the HUF
+              with NSE Invest for mutual fund investments, and to submit its FATCA/CRS declaration naming me as the HUF&apos;s beneficial
+              owner. The HUF is resident in India for tax only, and neither I nor the HUF is a politically exposed person.
+            </>
+          )}
         </span>
       </label>
       <div className="max-w-xs">

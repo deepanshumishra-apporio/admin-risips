@@ -92,6 +92,8 @@ const Initial: InvestState = { error: null };
 
 type WizardProps = {
   hufId: string;
+  /** /onboarding/hufs or /onboarding/companies: where this client's screens are. */
+  base?: string;
   hufName: string;
   scheme: HufScheme;
   kind: 'lumpsum' | 'sip';
@@ -106,7 +108,7 @@ type WizardProps = {
  * NSE, then NSE's link for the karta. Nothing reaches NSE before the review is confirmed.
  */
 export function InvestWizard(props: WizardProps): React.JSX.Element {
-  const { hufId, hufName, scheme, kind, folios, mandates, live, mandateHref } = props;
+  const { hufId, hufName, scheme, kind, folios, mandates, live, mandateHref, base = '/onboarding/hufs' } = props;
   const [purchaseState, purchase] = useActionState(placePurchase, Initial);
   const [sipState, sip] = useActionState(registerSip, Initial);
   const state = kind === 'lumpsum' ? purchaseState : sipState;
@@ -145,7 +147,7 @@ export function InvestWizard(props: WizardProps): React.JSX.Element {
     return null;
   };
 
-  const backHref = `/onboarding/hufs/${hufId}?tab=portfolio`;
+  const backHref = `${base}/${hufId}?tab=portfolio`;
 
   // Step 4: placed; the karta takes it from here.
   if (state.done) {
@@ -184,10 +186,10 @@ export function InvestWizard(props: WizardProps): React.JSX.Element {
                 <p className="text-[12.5px] text-ink-muted">NSE hasn&apos;t issued the link yet. Fetch it later from the HUF&apos;s Transactions tab.</p>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
-                <Link href={`/onboarding/hufs/${hufId}?tab=transactions`} className="inline-flex h-9 items-center rounded-lg bg-brand px-4 text-[13px] font-semibold text-white hover:bg-brand-strong">
+                <Link href={`${base}/${hufId}?tab=transactions`} className="inline-flex h-9 items-center rounded-lg bg-brand px-4 text-[13px] font-semibold text-white hover:bg-brand-strong">
                   See it in Transactions
                 </Link>
-                <Link href={`/onboarding/hufs/${hufId}/invest`} className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-4 text-[13px] font-medium text-ink hover:bg-surface-sunken">
+                <Link href={`${base}/${hufId}/invest`} className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-4 text-[13px] font-medium text-ink hover:bg-surface-sunken">
                   Invest in another fund
                 </Link>
               </div>

@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufInvestments, listHufFunds } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufFundList, HufInvestmentsView } from '@/types/admin-api.types';
+import { currentSection } from '@/features/hufs/section';
 
 export const metadata: Metadata = { title: 'Invest for a HUF · RiSips Admin' };
 
@@ -26,6 +27,7 @@ type InvestPageProps = {
  */
 export default async function HufInvestPage({ params, searchParams }: InvestPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
+  const section = await currentSection();
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
@@ -37,7 +39,7 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
   const sp = await searchParams;
   // Old links chose the fund in the query.
   const legacy = typeof sp['scheme'] === 'string' ? sp['scheme'] : '';
-  if (legacy) redirect(`/onboarding/hufs/${id}/invest/${encodeURIComponent(legacy)}${sp['tab'] === 'sip' ? '?type=sip' : ''}`);
+  if (legacy) redirect(`${section.base}/${id}/invest/${encodeURIComponent(legacy)}${sp['tab'] === 'sip' ? '?type=sip' : ''}`);
 
   const { values, query } = fundQueryOf(sp);
   let huf: HufDetail;
@@ -59,11 +61,11 @@ export default async function HufInvestPage({ params, searchParams }: InvestPage
     }
   }
   const held = view.investments ? fundsOf(view.investments).filter((f) => f.units > 0) : [];
-  const base = `/onboarding/hufs/${id}/invest`;
+  const base = `${section.base}/${id}/invest`;
 
   return (
     <>
-      <Link href={`/onboarding/hufs/${id}?tab=portfolio`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
+      <Link href={`${section.base}/${id}?tab=portfolio`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
         {huf.hufName} · Portfolio
       </Link>

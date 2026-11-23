@@ -19,6 +19,7 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufInvestments, getHufScheme, getHufSchemeHistory } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufInvestmentsView, HufNavHistory, HufScheme } from '@/types/admin-api.types';
+import { currentSection } from '@/features/hufs/section';
 
 export const metadata: Metadata = { title: 'Mutual fund · RiSips Admin' };
 
@@ -73,6 +74,7 @@ function YearRange({ history, nav }: { history: HufNavHistory; nav: number | nul
  */
 export default async function HufFundPage({ params }: FundPageProps): Promise<React.JSX.Element> {
   const { id, code: rawCode } = await params;
+  const section = await currentSection();
   const code = decodeURIComponent(rawCode).toUpperCase();
   if (!(await hasPermission('hufs.manage'))) {
     return (
@@ -113,7 +115,7 @@ export default async function HufFundPage({ params }: FundPageProps): Promise<Re
     return date ? [{ date, label: `Bought ${inr(a.amount, 2)}, ${unitsText(a.units)} units` }] : [];
   });
   const owns = Boolean(fund && (fund.units > 0 || fund.orders > 0));
-  const investHref = (type: 'lumpsum' | 'sip') => `/onboarding/hufs/${id}/invest/${encodeURIComponent(code)}${type === 'sip' ? '?type=sip' : ''}`;
+  const investHref = (type: 'lumpsum' | 'sip') => `${section.base}/${id}/invest/${encodeURIComponent(code)}${type === 'sip' ? '?type=sip' : ''}`;
 
   const overview = (
     <div className="space-y-4">
@@ -244,7 +246,7 @@ export default async function HufFundPage({ params }: FundPageProps): Promise<Re
     <div className="space-y-4">
       <Card>
         <CardHeader title="Orders" subtitle="As NSE has them, newest first" />
-        {orders.length ? <OrdersTable hufId={id} orders={orders} linkFunds={false} /> : <CardBody><p className="text-[13px] text-ink-muted">No orders in this fund.</p></CardBody>}
+        {orders.length ? <OrdersTable hufId={id} orders={orders} linkFunds={false} base={section.base} /> : <CardBody><p className="text-[13px] text-ink-muted">No orders in this fund.</p></CardBody>}
       </Card>
       {allotments.length || redemptions.length ? (
         <Card>
@@ -306,12 +308,12 @@ export default async function HufFundPage({ params }: FundPageProps): Promise<Re
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-medium text-ink-muted">
-        <Link href={owns ? `/onboarding/hufs/${id}?tab=portfolio` : `/onboarding/hufs/${id}/funds`} className="inline-flex items-center gap-1.5 hover:text-ink">
+        <Link href={owns ? `${section.base}/${id}?tab=portfolio` : `${section.base}/${id}/funds`} className="inline-flex items-center gap-1.5 hover:text-ink">
           <ArrowLeft className="size-3.5" />
           {owns ? `${huf.hufName} · Portfolio` : 'All mutual funds'}
         </Link>
         {owns ? (
-          <Link href={`/onboarding/hufs/${id}/funds`} className="hover:text-ink">
+          <Link href={`${section.base}/${id}/funds`} className="hover:text-ink">
             All mutual funds
           </Link>
         ) : null}

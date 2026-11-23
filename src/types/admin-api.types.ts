@@ -928,8 +928,29 @@ export type MeetingInvestorOption = { id: string; name: string | null; phone: st
 export const HufStatuses = ['DRAFT', 'AWAITING_CONSENT', 'CONSENTED', 'SUBMITTING', 'NSE_FAILED', 'AWAITING_KARTA', 'ACTIVE', 'CANCELLED'] as const;
 export type HufStatus = (typeof HufStatuses)[number];
 
-/** What staff enter. Dates are yyyy-mm-dd. */
+/** HUF (tax status 03) or company (04): both go through the same onboarding. */
+export const EntityTypes = ['HUF', 'COMPANY'] as const;
+export type EntityType = (typeof EntityTypes)[number];
+
+/**
+ * A company's beneficial owner. UBO: owns or controls more than 10%. SMO: the senior managing official, declared on
+ * their own when no one crosses that line. NSE takes at most 4.
+ */
+export type CompanyOwner = {
+  name: string;
+  pan: string;
+  dateOfBirth: string;
+  gender: 'M' | 'F' | 'O' | '';
+  fatherName: string;
+  category: 'UBO' | 'SMO';
+  holdingPct: string;
+  designation: string;
+};
+
+/** What staff enter. Dates are yyyy-mm-dd. For a company, `hufName` is its name and `karta` its authorised signatory. */
 export type HufDetailsInput = {
+  /** Absent on HUFs saved before companies existed. */
+  entityType?: EntityType;
   clientCode: string;
   hufName: string;
   pan: string;
@@ -953,6 +974,12 @@ export type HufDetailsInput = {
   pincode: string;
   karta: { name: string; pan: string; dateOfBirth: string; gender: 'M' | 'F' | 'O' | ''; fatherName: string };
   coparceners: { name: string; relationship: string; dateOfBirth: string | null }[];
+  /** Company only. */
+  signatoryDesignation?: string;
+  cin?: string;
+  owners?: CompanyOwner[];
+  /** Listed on an exchange (or a subsidiary of a listed company): no owners are declared. */
+  listed?: { exchange: 'B' | 'N'; isin: string } | null;
 };
 
 export type HufRegistrarStatus = { status: 'NOT_SENT' | 'PENDING' | 'ACCEPTED' | 'REJECTED'; remark: string | null };
@@ -975,6 +1002,8 @@ export type HufNseStep = { ok: boolean; status: string; remark: string | null; a
 
 export type HufListItem = {
   id: string;
+  /** Absent from an older admin backend: a HUF. */
+  entityType?: EntityType;
   clientCode: string;
   hufName: string;
   pan: string;
@@ -1023,6 +1052,9 @@ export type HufDetail = HufListItem & {
 
 export type HufOptions = {
   nextClientCode: string;
+  /** The next code in each series (RSPH… for HUFs, RSPC… for companies). Absent from an older admin backend. */
+  nextClientCodes?: Record<EntityType, string>;
+  maxOwners?: number;
   states: { code: string; name: string }[];
   incomeSlabs: { code: string; label: string }[];
   nse: { environment: 'UAT' | 'LIVE'; configured: boolean; liveAllowed: boolean };
@@ -1037,6 +1069,11 @@ export type HufConsentView = {
   agreedAt: string | null;
   expiresAt: string | null;
   huf: {
+    entityType?: EntityType;
+    signatoryDesignation?: string | null;
+    cin?: string | null;
+    owners?: { name: string; pan: string; category: 'UBO' | 'SMO'; holdingPct: string | null; designation: string | null }[];
+    listed?: { exchange: 'B' | 'N'; isin: string } | null;
     name: string;
     pan: string;
     formedOn: string;
@@ -1166,6 +1203,8 @@ export type HufRequest = {
   linkError: string | null;
   at: string;
   by: string | null;
+  /** A purchase paid by NEFT/RTGS with the bank's UTR. */
+  neft?: { utr: string; ok: boolean; status: string; remark: string | null; at: string; by: string } | null;
 };
 
 export type HufInvestmentsView = {

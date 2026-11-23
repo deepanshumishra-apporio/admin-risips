@@ -10,16 +10,18 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufOptions } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail } from '@/types/admin-api.types';
+import { currentSection } from '@/features/hufs/section';
 
-export const metadata: Metadata = { title: 'Edit HUF · RiSips Admin' };
+export const metadata: Metadata = { title: 'Edit · RiSips Admin' };
 
 export default async function EditHufPage({ params }: { params: Promise<{ id: string }> }): Promise<React.JSX.Element> {
   const { id } = await params;
+  const section = await currentSection();
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
-        <PageHeader title="Edit HUF" />
-        <NoAccess what="HUF onboarding" />
+        <PageHeader title={`Edit ${section.word}`} />
+        <NoAccess what={section.title} />
       </>
     );
   }
@@ -30,18 +32,18 @@ export default async function EditHufPage({ params }: { params: Promise<{ id: st
     if (error instanceof ApiError && error.isNotFound) notFound();
     throw error;
   }
-  if (!huf.canEdit) redirect(`/onboarding/hufs/${id}`);
+  if (!huf.canEdit) redirect(`${section.base}/${id}`);
   const consented = huf.consent.state !== 'NONE';
   return (
     <>
-      <Link href={`/onboarding/hufs/${id}`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
+      <Link href={`${section.base}/${id}`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
         {huf.hufName}
       </Link>
       <PageHeader
-        title="Edit HUF"
+        title={`Edit ${section.word}`}
         {...(consented && {
-          description: "Saving clears the karta's consent: they agreed to the details as they were, so they need a new link.",
+          description: `Saving clears the ${section.type === 'COMPANY' ? "signatory's" : "karta's"} consent: they agreed to the details as they were, so they need a new link.`,
         })}
       />
       <HufForm id={id} initial={huf.details} options={await getHufOptions()} />

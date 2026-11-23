@@ -6,7 +6,7 @@ import { useFormStatus } from 'react-dom';
 
 import { Field, TextInput } from '@/components/ui/field';
 import {
-  refreshInvestments, refreshRequestLink, registerMandate, type InvestState,
+  payByNeft, refreshInvestments, refreshRequestLink, registerMandate, type InvestState,
 } from '@/features/hufs/invest-actions';
 import { cn } from '@/utils/cn';
 
@@ -84,6 +84,31 @@ export function RefreshInvestments({ hufId }: { hufId: string }): React.JSX.Elem
       <input type="hidden" name="id" value={hufId} />
       <Submit>Refresh from NSE</Submit>
       <Outcome state={state} />
+    </form>
+  );
+}
+
+/** Pays a placed purchase by NEFT/RTGS: the UTR of the transfer from the investor's registered account. */
+export function NeftPayment({ hufId, requestId }: { hufId: string; requestId: string }): React.JSX.Element {
+  const [state, action] = useActionState(payByNeft, Initial);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="id" value={hufId} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <label className="text-[12px] text-ink-muted" htmlFor={`utr-${requestId}`}>
+        Paid by NEFT/RTGS? UTR
+      </label>
+      <input
+        id={`utr-${requestId}`}
+        name="utr"
+        maxLength={30}
+        autoComplete="off"
+        className="h-8 w-56 rounded-md border border-line-strong bg-surface px-2 text-[13px] uppercase"
+        placeholder="e.g. HDFCR52026112412345678"
+      />
+      <Submit>Send to NSE</Submit>
+      {state.error ? <span className="text-[12px] text-danger">{state.error}</span> : null}
+      {state.done ? <span className="text-[12px] text-success">{state.done}</span> : null}
     </form>
   );
 }

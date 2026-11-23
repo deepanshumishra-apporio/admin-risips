@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufInvestments, listHufFunds } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufFundList, HufInvestmentsView } from '@/types/admin-api.types';
+import { currentSection } from '@/features/hufs/section';
 
 export const metadata: Metadata = { title: 'Mutual funds · RiSips Admin' };
 
@@ -22,6 +23,7 @@ type Props = {
 /** Every mutual fund the HUF can buy on NSE, by asset class, category and fund house; each opens its own screen. */
 export default async function HufFundsPage({ params, searchParams }: Props): Promise<React.JSX.Element> {
   const { id } = await params;
+  const section = await currentSection();
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
@@ -48,11 +50,11 @@ export default async function HufFundsPage({ params, searchParams }: Props): Pro
     listError = error.message;
   }
   const held = new Set(view.investments ? fundsOf(view.investments).filter((f) => f.units > 0).map((f) => f.schemeCode) : []);
-  const base = `/onboarding/hufs/${id}/funds`;
+  const base = `${section.base}/${id}/funds`;
 
   return (
     <>
-      <Link href={`/onboarding/hufs/${id}?tab=portfolio`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
+      <Link href={`${section.base}/${id}?tab=portfolio`} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
         {huf.hufName} · Portfolio
       </Link>
@@ -61,7 +63,7 @@ export default async function HufFundsPage({ params, searchParams }: Props): Pro
         description="Every fund open for purchase on NSE, with AMFI's categories. Open one for its NAV chart, returns, rules and the HUF's position in it."
         actions={
           !view.block ? (
-            <Link href={`/onboarding/hufs/${id}/invest`} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-strong">
+            <Link href={`${section.base}/${id}/invest`} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-strong">
               <Plus className="size-3.5" />
               Invest
             </Link>

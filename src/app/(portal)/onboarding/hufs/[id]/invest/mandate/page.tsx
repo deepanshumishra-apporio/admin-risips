@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufInvestments } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufInvestmentsView } from '@/types/admin-api.types';
+import { currentSection } from '@/features/hufs/section';
 
 export const metadata: Metadata = { title: 'SIP mandate · RiSips Admin' };
 
@@ -27,6 +28,7 @@ type Props = {
  */
 export default async function HufMandatePage({ params, searchParams }: Props): Promise<React.JSX.Element> {
   const { id } = await params;
+  const section = await currentSection();
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
@@ -44,7 +46,7 @@ export default async function HufMandatePage({ params, searchParams }: Props): P
     throw error;
   }
   const fund = (await searchParams)['fund'];
-  const back = typeof fund === 'string' && fund ? `/onboarding/hufs/${id}/invest/${encodeURIComponent(fund)}?type=sip` : `/onboarding/hufs/${id}/invest`;
+  const back = typeof fund === 'string' && fund ? `${section.base}/${id}/invest/${encodeURIComponent(fund)}?type=sip` : `${section.base}/${id}/invest`;
   const mandates = view.investments?.mandates ?? [];
   const asked = view.requests.filter((r) => r.kind === 'MANDATE').slice(0, 5);
 

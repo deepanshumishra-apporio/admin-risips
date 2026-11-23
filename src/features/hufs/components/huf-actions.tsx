@@ -51,7 +51,7 @@ function CopyLink({ url }: { url: string }): React.JSX.Element {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <p className="text-[12px] text-ink-muted">Shown only now. Send it to the karta yourself (WhatsApp, SMS or email); it works for 7 days.</p>
+      <p className="text-[12px] text-ink-muted">Shown only now. Send it to the karta or authorised signatory yourself (WhatsApp, SMS or email); it works for 7 days.</p>
     </div>
   );
 }
@@ -61,7 +61,7 @@ export function ConsentLinkAction({ id, again }: { id: string; again: boolean })
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="id" value={id} />
-      {state.consentUrl ? <CopyLink url={state.consentUrl} /> : <Button tone="primary">{again ? 'Create a new consent link' : 'Create consent link for the karta'}</Button>}
+      {state.consentUrl ? <CopyLink url={state.consentUrl} /> : <Button tone="primary">{again ? 'Create a new consent link' : 'Create consent link'}</Button>}
       {state.consentUrl ? null : <Outcome state={state} />}
     </form>
   );
@@ -100,7 +100,7 @@ export function ResendAction({ id }: { id: string }): React.JSX.Element {
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="id" value={id} />
-      <Button>Re-send the karta&apos;s NSE link</Button>
+      <Button>Re-send NSE&apos;s authorisation link</Button>
       <Outcome state={state} />
     </form>
   );
@@ -136,9 +136,9 @@ export function SyncAction(): React.JSX.Element {
 export function CancelAction({ id }: { id: string }): React.JSX.Element {
   const [state, action] = useActionState(cancelHuf, Initial);
   return (
-    <form action={action} className="space-y-2" onSubmit={(event) => { if (!window.confirm('Cancel this HUF? It has not been sent to NSE.')) event.preventDefault(); }}>
+    <form action={action} className="space-y-2" onSubmit={(event) => { if (!window.confirm('Cancel this draft? It has not been sent to NSE.')) event.preventDefault(); }}>
       <input type="hidden" name="id" value={id} />
-      <Button tone="danger">Cancel this HUF</Button>
+      <Button tone="danger">Cancel this draft</Button>
       <Outcome state={state} />
     </form>
   );

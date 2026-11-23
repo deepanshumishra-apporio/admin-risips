@@ -7,7 +7,7 @@ import { getHufConsent } from '@/lib/api/hufs';
 import type { HufConsentView } from '@/types/admin-api.types';
 import { formatDate } from '@/utils/format';
 
-export const metadata: Metadata = { title: 'HUF consent · RiSips', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Consent · RiSips', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
@@ -35,6 +35,7 @@ export default async function HufConsentPage({ params }: { params: Promise<{ tok
     problem = error.message;
   }
 
+  const company = view?.huf.entityType === 'COMPANY';
   return (
     <main className="min-h-screen bg-surface-sunken px-4 py-10 text-ink">
       <div className="mx-auto max-w-xl">
@@ -47,15 +48,29 @@ export default async function HufConsentPage({ params }: { params: Promise<{ tok
             </>
           ) : (
             <>
-              <h1 className="text-[20px] font-semibold">Confirm your HUF&apos;s registration</h1>
+              <h1 className="text-[20px] font-semibold">{company ? "Confirm your company's registration" : 'Confirm your HUF\'s registration'}</h1>
               <p className="mt-1.5 text-[14px] text-ink-soft">
-                RiSips will register this Hindu Undivided Family with NSE Invest. Please check the details and give your consent.
+                {company
+                  ? 'RiSips will register this company with NSE Invest. Please check the details and give your consent.'
+                  : 'RiSips will register this Hindu Undivided Family with NSE Invest. Please check the details and give your consent.'}
               </p>
               <dl className="my-5">
-                <Row label="HUF" value={view.huf.name} />
-                <Row label="HUF PAN" value={view.huf.pan} />
-                <Row label="Formed on" value={formatDate(view.huf.formedOn)} />
-                <Row label="Karta" value={`${view.huf.kartaName} · ${view.huf.kartaPan}`} />
+                <Row label={company ? 'Company' : 'HUF'} value={view.huf.name} />
+                <Row label={company ? 'Company PAN' : 'HUF PAN'} value={view.huf.pan} />
+                <Row label={company ? 'Incorporated on' : 'Formed on'} value={formatDate(view.huf.formedOn)} />
+                <Row
+                  label={company ? 'Authorised signatory' : 'Karta'}
+                  value={`${view.huf.kartaName} · ${view.huf.kartaPan}${company && view.huf.signatoryDesignation ? ` · ${view.huf.signatoryDesignation}` : ''}`}
+                />
+                {company && view.huf.listed ? <Row label="Listed" value={`${view.huf.listed.exchange === 'B' ? 'BSE' : 'NSE'} · ISIN ${view.huf.listed.isin}`} /> : null}
+                {company && view.huf.owners?.length ? (
+                  <Row
+                    label="Beneficial owners"
+                    value={view.huf.owners
+                      .map((o) => `${o.name} (${o.category === 'SMO' ? `senior managing official${o.designation ? `, ${o.designation.toLowerCase()}` : ''}` : `${o.holdingPct}%`})`)
+                      .join(', ')}
+                  />
+                ) : null}
                 <Row label="Email for NSE links" value={view.huf.email} />
                 <Row label="Mobile for OTPs" value={view.huf.mobile} />
                 <Row label="Bank account" value={`${view.huf.bank.holder} · ${view.huf.bank.accountNo} · ${view.huf.bank.ifsc}`} />

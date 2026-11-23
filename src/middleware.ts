@@ -15,10 +15,28 @@ const SessionCookie = process.env.NODE_ENV === 'production' ? '__Host-risips_adm
 
 export function middleware(request: NextRequest): NextResponse {
   const signedIn = Boolean(request.cookies.get(SessionCookie)?.value);
-  if (signedIn) return NextResponse.next();
+  if (signedIn) return onboardingSection(request);
 
   const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
   return middlewareRedirect(request, '/signin', next === '/' ? undefined : { next });
+}
+
+/**
+ * HUF onboarding (/onboarding/hufs) and company onboarding (/onboarding/companies) are separate screens served by the
+ * same pages: /onboarding/companies/… is rewritten onto /onboarding/hufs/…, and the `x-client-section` header tells the
+ * page which section it is in (always set here, so a header sent by the browser never counts).
+ */
+function onboardingSection(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+  const company = pathname === '/onboarding/companies' || pathname.startsWith('/onboarding/companies/');
+  const huf = pathname === '/onboarding/hufs' || pathname.startsWith('/onboarding/hufs/');
+  if (!company && !huf) return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-client-section', company ? 'companies' : 'hufs');
+  if (!company) return NextResponse.next({ request: { headers: requestHeaders } });
+  const url = request.nextUrl.clone();
+  url.pathname = pathname.replace(/^\/onboarding\/companies/, '/onboarding/hufs');
+  return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
 }
 
 export const config = {

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** The breadcrumb links here; HUFs are the only onboarding staff do from the admin. */
+/** The breadcrumb links here; HUF onboarding is the first of the two onboarding screens (HUFs, companies). */
 export default function OnboardingPage(): never {
   redirect('/onboarding/hufs');
 }

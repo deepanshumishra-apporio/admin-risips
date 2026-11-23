@@ -1,4 +1,4 @@
-import { ChevronRight, Landmark, Plus } from 'lucide-react';
+import { Building2, ChevronRight, Landmark, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -10,56 +10,67 @@ import { NoAccess } from '@/components/ui/no-access';
 import { Table, Td } from '@/components/ui/table';
 import { SyncAction } from '@/features/hufs/components/huf-actions';
 import { HufStatusLabel, HufStatusTone, HufViews, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
+import { currentSection } from '@/features/hufs/section';
 import { getHufOptions, listHufs } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import { cn } from '@/utils/cn';
 import { formatCount, timeAgo } from '@/utils/format';
 
-export const metadata: Metadata = { title: 'HUF onboarding · RiSips Admin' };
+export const metadata: Metadata = { title: 'Onboarding · RiSips Admin' };
 
 type HufsPageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
+/**
+ * HUF onboarding (/onboarding/hufs) or company onboarding (/onboarding/companies): the same page, showing only the
+ * clients of the section it was opened in.
+ */
 export default async function HufsPage({ searchParams }: HufsPageProps): Promise<React.JSX.Element> {
-  const description = 'Register Hindu Undivided Families on NSE: the karta consents, a colleague approves, then NSE and the karta take it from there.';
+  const section = await currentSection();
+  const company = section.type === 'COMPANY';
+  const plural = company ? 'companies' : 'HUFs';
+  const description = company
+    ? 'Register companies (private or public limited) on NSE: the authorised signatory consents, a colleague approves, then NSE takes it from there.'
+    : 'Register Hindu Undivided Families on NSE: the karta consents, a colleague approves, then NSE and the karta take it from there.';
+  const Icon = company ? Building2 : Landmark;
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
-        <PageHeader title="HUF onboarding" description={description} />
-        <NoAccess what="HUF onboarding" />
+        <PageHeader title={section.title} description={description} />
+        <NoAccess what={section.title} />
       </>
     );
   }
   const params = await searchParams;
   const viewKey = typeof params['view'] === 'string' ? params['view'] : 'open';
   const view = HufViews.find((v) => v.key === viewKey) ?? HufViews[0]!;
-  const [result, options] = await Promise.all([listHufs({ status: view.statuses, limit: 100 }), getHufOptions()]);
+  const [result, options] = await Promise.all([listHufs({ status: view.statuses, type: [section.type], limit: 100 }), getHufOptions()]);
   const count = (statuses: readonly string[]): number =>
     statuses.reduce((sum, s) => sum + (result.counts[s as keyof typeof result.counts] ?? 0), 0);
 
   return (
     <>
       <PageHeader
-        title="HUF onboarding"
+        title={section.title}
         description={description}
         actions={
           <Link
-            href="/onboarding/hufs/new"
+            href={`${section.base}/new`}
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-4 text-[14px] font-semibold text-white transition-colors hover:bg-brand-strong"
           >
             <Plus className="size-4" />
-            New HUF
+            {company ? 'New company' : 'New HUF'}
           </Link>
         }
       />
 
       {options.nse.environment === 'UAT' ? (
         <p className="mb-4 rounded-md border border-warn/25 bg-warn-soft px-4 py-2.5 text-[13px] text-warn">
-          This server sends HUFs to NSE&apos;s <strong>UAT</strong> test environment. Nothing reaches the live NSE account.
+          This server sends {plural} to NSE&apos;s <strong>UAT</strong> test environment. Nothing reaches the live NSE account.
         </p>
       ) : null}
       {!options.nse.configured ? (
         <p className="mb-4 rounded-md border border-danger/25 bg-danger-soft px-4 py-2.5 text-[13px] text-danger">
-          NSE is not configured on the admin server yet, so HUFs can be prepared and consented to, but not sent.
+          NSE is not configured on the admin server yet, so {plural} can be prepared and consented to, but not sent.
         </p>
       ) : null}
 
@@ -67,18 +78,18 @@ export default async function HufsPage({ searchParams }: HufsPageProps): Promise
         <div className="mb-4 flex flex-wrap items-center gap-3 text-[13px] text-ink-muted">
           <SyncAction />
           <span>
-            Adds HUFs registered on NSE directly, e.g. on its portal. Runs by itself once a day
+            Adds HUFs and companies registered on NSE directly, e.g. on its portal, each to its own list. Runs by itself once a day
             {options.lastSyncAt ? `; last ${timeAgo(options.lastSyncAt)}` : ''}.
           </span>
         </div>
       ) : null}
 
       <Card>
-        <nav aria-label="HUF views" className="flex flex-wrap gap-2 px-6 pt-5 pb-4">
+        <nav aria-label={`${section.title} views`} className="flex flex-wrap gap-2 px-6 pt-5 pb-4">
           {HufViews.map((v) => (
             <Link
               key={v.key}
-              href={`/onboarding/hufs?view=${v.key}`}
+              href={`${section.base}?view=${v.key}`}
               aria-current={v.key === view.key ? 'page' : undefined}
               className={cn(
                 'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors',
@@ -92,16 +103,16 @@ export default async function HufsPage({ searchParams }: HufsPageProps): Promise
         </nav>
         {result.items.length === 0 ? (
           <EmptyState
-            icon={<Landmark className="size-5" />}
-            title="No HUFs here"
-            description="Start one with New HUF. It stays a draft until the karta consents."
+            icon={<Icon className="size-5" />}
+            title={`No ${plural} here`}
+            description={company ? 'Start one with New company. It stays a draft until the authorised signatory consents.' : 'Start one with New HUF. It stays a draft until the karta consents.'}
           />
         ) : (
-          <Table headers={['HUF', 'Karta', 'Client code', 'Status', 'NSE bank check', 'FATCA (CAMS / KFin)', 'Updated', '']}>
+          <Table headers={[company ? 'Company' : 'HUF', company ? 'Authorised signatory' : 'Karta', 'Client code', 'Status', 'NSE bank check', 'FATCA (CAMS / KFin)', 'Updated', '']}>
             {result.items.map((h) => (
               <tr key={h.id} className="group hover:bg-surface-sunken">
                 <Td>
-                  <Link href={`/onboarding/hufs/${h.id}`} className="font-semibold text-ink group-hover:text-brand">
+                  <Link href={`${section.base}/${h.id}`} className="font-semibold text-ink group-hover:text-brand">
                     {h.hufName}
                   </Link>
                   {h.source === 'NSE' ? <Badge tone="neutral" className="ml-2">On NSE directly</Badge> : null}
@@ -125,7 +136,7 @@ export default async function HufsPage({ searchParams }: HufsPageProps): Promise
                 </Td>
                 <Td className="whitespace-nowrap">{timeAgo(h.updatedAt)}</Td>
                 <Td>
-                  <Link href={`/onboarding/hufs/${h.id}`} aria-label={`Open ${h.hufName}`} className="text-ink-muted group-hover:text-ink">
+                  <Link href={`${section.base}/${h.id}`} aria-label={`Open ${h.hufName}`} className="text-ink-muted group-hover:text-ink">
                     <ChevronRight className="size-4" />
                   </Link>
                 </Td>

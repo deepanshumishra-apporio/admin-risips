@@ -13,6 +13,7 @@ import { getHuf, getHufInvestments, getHufScheme, getHufSchemeHistory } from '@/
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufInvestmentsView, HufScheme } from '@/types/admin-api.types';
 import { cn } from '@/utils/cn';
+import { currentSection } from '@/features/hufs/section';
 
 export const metadata: Metadata = { title: 'Invest for a HUF · RiSips Admin' };
 
@@ -24,6 +25,7 @@ type Props = {
 /** Steps 2 to 4 of investing for a HUF in one fund: a lumpsum or a monthly SIP, reviewed, then sent to NSE. */
 export default async function HufInvestInFundPage({ params, searchParams }: Props): Promise<React.JSX.Element> {
   const { id, code: rawCode } = await params;
+  const section = await currentSection();
   const code = decodeURIComponent(rawCode).toUpperCase();
   if (!(await hasPermission('hufs.manage'))) {
     return (
@@ -46,8 +48,8 @@ export default async function HufInvestInFundPage({ params, searchParams }: Prop
   const asked = (await searchParams)['type'] === 'sip' ? 'sip' : 'lumpsum';
   const kind = asked === 'sip' && scheme.sipMonthly ? 'sip' : 'lumpsum';
   const folios = view.folios.filter((f) => f.schemeCode === code).map((f) => f.folio);
-  const base = `/onboarding/hufs/${id}/invest`;
-  const fundHref = `/onboarding/hufs/${id}/funds/${encodeURIComponent(code)}`;
+  const base = `${section.base}/${id}/invest`;
+  const fundHref = `${section.base}/${id}/funds/${encodeURIComponent(code)}`;
 
   return (
     <>
@@ -85,6 +87,7 @@ export default async function HufInvestInFundPage({ params, searchParams }: Prop
               })}
             </nav>
             <InvestWizard
+              base={section.base}
               key={kind}
               hufId={id}
               hufName={huf.hufName}

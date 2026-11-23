@@ -19,7 +19,7 @@ type View = { requests: { link: string | null; linkError: string | null; nseId: 
 /** One call; the newest request's link comes back so the person who placed it can send it to the karta. */
 async function send(form: FormData, path: string, body: unknown, done: string): Promise<InvestState> {
   const id = text(form, 'id');
-  if (!Uuid.test(id)) return { error: 'That HUF could not be found.' };
+  if (!Uuid.test(id)) return { error: 'That client could not be found.' };
   let view: View;
   try {
     view = await authedRequest<View>(`/hufs/${id}/${path}`, { method: 'POST', ...(body !== undefined && { body }) });
@@ -36,11 +36,11 @@ async function send(form: FormData, path: string, body: unknown, done: string): 
 export async function placePurchase(_previous: InvestState, form: FormData): Promise<InvestState> {
   if (form.get('confirm') !== 'on') return { error: 'Tick the box to confirm the order.' };
   return send(form, 'purchase', { schemeCode: text(form, 'schemeCode'), amount: Number(text(form, 'amount')), folio: text(form, 'folio') || null },
-    'Order placed. The karta confirms it and pays on NSE.');
+    'Order placed. The karta or signatory confirms it on NSE, then pays (or pay by NEFT and enter the UTR here).');
 }
 
 export async function registerMandate(_previous: InvestState, form: FormData): Promise<InvestState> {
-  return send(form, 'mandate', { amount: Number(text(form, 'amount')) }, 'Mandate registered. The karta approves it with their bank.');
+  return send(form, 'mandate', { amount: Number(text(form, 'amount')) }, 'Mandate registered. The karta or signatory approves it with their bank.');
 }
 
 export async function registerSip(_previous: InvestState, form: FormData): Promise<InvestState> {
@@ -48,11 +48,20 @@ export async function registerSip(_previous: InvestState, form: FormData): Promi
   return send(form, 'sip', {
     schemeCode: text(form, 'schemeCode'), amount: Number(text(form, 'amount')), startDate: text(form, 'startDate'),
     installments: Number(text(form, 'installments')), mandateId: text(form, 'mandateId'),
-  }, 'SIP registered. The karta approves it on NSE.');
+  }, 'SIP registered. The karta or signatory approves it on NSE.');
 }
 
 export async function refreshInvestments(_previous: InvestState, form: FormData): Promise<InvestState> {
   return send(form, 'investments/refresh', undefined, 'Read from NSE just now.');
+}
+
+/** A placed purchase paid by NEFT/RTGS: the UTR of the transfer from the investor's registered account goes to NSE. */
+export async function payByNeft(_previous: InvestState, form: FormData): Promise<InvestState> {
+  const requestId = text(form, 'requestId');
+  if (!/^[A-Z0-9]{4,20}$/.test(requestId)) return { error: 'That order could not be found.' };
+  const utr = text(form, 'utr').toUpperCase();
+  if (!/^[A-Z0-9]{12,30}$/.test(utr)) return { error: 'Enter the UTR from the bank: 12 to 30 letters and digits (NEFT 16, RTGS 22).' };
+  return send(form, `requests/${requestId}/neft`, { utr }, 'UTR sent to NSE.');
 }
 
 export async function refreshRequestLink(_previous: InvestState, form: FormData): Promise<InvestState> {

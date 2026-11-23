@@ -3,10 +3,10 @@ import 'server-only';
 import { apiRequest } from '@/lib/api/client';
 import { authedRequest } from '@/lib/auth/session';
 import type {
-  HufConsentView, HufDetail, HufFundList, HufFundQuery, HufInvestmentsView, HufList, HufNavHistory, HufOptions, HufScheme, HufStatus,
+  EntityType, HufConsentView, HufDetail, HufFundList, HufFundQuery, HufInvestmentsView, HufList, HufNavHistory, HufOptions, HufScheme, HufStatus,
 } from '@/types/admin-api.types';
 
-export function listHufs(query: { status?: HufStatus[]; search?: string; cursor?: string; limit?: number } = {}): Promise<HufList> {
+export function listHufs(query: { status?: HufStatus[]; type?: EntityType[]; search?: string; cursor?: string; limit?: number } = {}): Promise<HufList> {
   return authedRequest('/hufs', { query });
 }
 

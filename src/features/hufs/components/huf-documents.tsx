@@ -10,7 +10,24 @@ import { uploadHufDocument, type HufActionState } from '@/features/hufs/actions'
 import { RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
 import type { HufDetail, HufDocumentKind } from '@/types/admin-api.types';
 
-const Documents: { kind: HufDocumentKind; title: string; why: string }[] = [
+/** What each document is and why, worded for a company or a HUF. */
+const documentsFor = (company: boolean): { kind: HufDocumentKind; title: string; why: string }[] => (company ? [
+  {
+    kind: 'AOF',
+    title: 'Account opening form (AOF), signed by the authorised signatory',
+    why: "Needed before the company can invest: NSE refuses its orders without it (\"AOF IMAGE IS NOT PRESENT OR NOT VALID OR NOT VERIFIED\"), and a company can't have an eLog. Signed with the company stamp; the board resolution and signatory list go with it.",
+  },
+  {
+    kind: 'FATCA_FORM',
+    title: 'FATCA / CRS and UBO declaration, signed by the authorised signatory',
+    why: "NSE's FATCA form for a non-individual, listing the beneficial owners. Backs up the FATCA declaration already sent; NSE won't take an order until a registrar accepts it.",
+  },
+  {
+    kind: 'CANCELLED_CHEQUE',
+    title: "Cancelled cheque of the company's current account",
+    why: "Only if NSE's bank check fails. It must show the company's name, account number and IFSC.",
+  },
+] : [
   {
     kind: 'AOF',
     title: 'Account opening form (AOF), signed by the karta',
@@ -26,7 +43,7 @@ const Documents: { kind: HufDocumentKind; title: string; why: string }[] = [
     title: "Cancelled cheque of the HUF's account",
     why: "Only if NSE's bank check fails. It must show the HUF's name, account number and IFSC.",
   },
-];
+]);
 
 function UploadButton(): React.JSX.Element {
   const { pending } = useFormStatus();
@@ -121,11 +138,11 @@ export function HufDocuments({ huf }: { huf: HufDetail }): React.JSX.Element {
     <Card>
       <CardHeader
         title="Documents on NSE"
-        subtitle={huf.canUploadDocuments ? 'Scans of signed paper: PDF, JPG, PNG or TIFF, up to 3 MB. Sent straight to NSE.' : 'Can be uploaded once the HUF is registered on NSE.'}
+        subtitle={huf.canUploadDocuments ? 'Scans of signed paper: PDF, JPG, PNG or TIFF, up to 3 MB. Sent straight to NSE.' : `Can be uploaded once the ${huf.entityType === 'COMPANY' ? 'company' : 'HUF'} is registered on NSE.`}
       />
       <CardBody>
         <ul className="space-y-4">
-          {Documents.map((d) => (
+          {documentsFor(huf.entityType === 'COMPANY').map((d) => (
             <DocumentRow key={d.kind} id={huf.id} huf={huf} {...d} />
           ))}
         </ul>

@@ -1,7 +1,7 @@
 import { ArrowLeft, ExternalLink, Pencil, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,9 @@ import { ApiError } from '@/lib/api/errors';
 import { getHuf, getHufInvestments, getHufOptions } from '@/lib/api/hufs';
 import { hasPermission } from '@/lib/auth/session';
 import type { HufDetail, HufInvestmentsView } from '@/types/admin-api.types';
+import { currentSection, sectionFor } from '@/features/hufs/section';
 
-export const metadata: Metadata = { title: 'HUF · RiSips Admin' };
+export const metadata: Metadata = { title: 'HUF or company · RiSips Admin' };
 
 /** The tabs, by the name a link can open them with (?tab=portfolio). */
 const TabKeys = ['onboarding', 'portfolio', 'transactions', 'family', 'history'] as const;
@@ -37,11 +38,12 @@ type HufPageProps = {
  */
 export default async function HufPage({ params, searchParams }: HufPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
+  const section = await currentSection();
   if (!(await hasPermission('hufs.manage'))) {
     return (
       <>
-        <PageHeader title="HUF" />
-        <NoAccess what="HUF onboarding" />
+        <PageHeader title={section.title} />
+        <NoAccess what={section.title} />
       </>
     );
   }
@@ -52,6 +54,9 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
     if (error instanceof ApiError && error.isNotFound) notFound();
     throw error;
   }
+  // A company opened from HUF onboarding (or the other way round, e.g. an old link) moves to its own section.
+  const own = sectionFor(huf.entityType);
+  if (own.base !== section.base) redirect(`${own.base}/${id}`);
   const onNse = Boolean(huf.steps.ucc?.ok) && huf.status !== 'CANCELLED';
   const [options, view] = await Promise.all([getHufOptions(), onNse ? getHufInvestments(id) : Promise.resolve<HufInvestmentsView | null>(null)]);
   const live = options.nse.environment === 'LIVE';
@@ -67,11 +72,11 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
     { label: 'Onboarding', ...(huf.problems.length ? { count: huf.problems.length } : {}), content: <OnboardingPanel huf={huf} options={options} /> },
     ...(view
       ? [
-          { label: 'Portfolio', ...(inv && fundsOf(inv).length ? { count: fundsOf(inv).length } : {}), content: <PortfolioPanel hufId={id} view={view} /> },
-          { label: 'Transactions', ...(inv?.orders.length ? { count: inv.orders.length } : {}), content: <TransactionsPanel hufId={id} view={view} /> },
+          { label: 'Portfolio', ...(inv && fundsOf(inv).length ? { count: fundsOf(inv).length } : {}), content: <PortfolioPanel hufId={id} view={view} base={section.base} /> },
+          { label: 'Transactions', ...(inv?.orders.length ? { count: inv.orders.length } : {}), content: <TransactionsPanel hufId={id} view={view} base={section.base} /> },
         ]
       : []),
-    { label: 'Family & bank', content: <FamilyPanel huf={huf} /> },
+    { label: huf.entityType === 'COMPANY' ? 'Company & bank' : 'Family & bank', content: <FamilyPanel huf={huf} /> },
     { label: 'History', content: <HistoryPanel huf={huf} /> },
   ];
   // Without Portfolio and Transactions the keys shift; map the asked tab onto what is shown.
@@ -80,13 +85,13 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
 
   return (
     <>
-      <Link href="/onboarding/hufs" className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
+      <Link href={section.base} className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted hover:text-ink">
         <ArrowLeft className="size-3.5" />
-        HUF onboarding
+        {section.title}
       </Link>
       <PageHeader
         title={huf.hufName}
-        description={`Karta ${huf.kartaName || 'not on NSE’s record'} · client code ${huf.clientCode} · ${live ? 'NSE live' : 'NSE UAT'}`}
+        description={`${huf.entityType === 'COMPANY' ? 'Company · signatory' : 'Karta'} ${huf.kartaName || 'not on NSE’s record'} · client code ${huf.clientCode} · ${live ? 'NSE live' : 'NSE UAT'}`}
         actions={
           <>
             <Badge tone={HufStatusTone[huf.status]} dot>
@@ -95,7 +100,7 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
             {huf.source === 'NSE' ? <Badge tone="neutral">On NSE directly</Badge> : null}
             {huf.canEdit ? (
               <Link
-                href={`/onboarding/hufs/${id}/edit`}
+                href={`${section.base}/${id}/edit`}
                 className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
               >
                 <Pencil className="size-3.5" />
@@ -104,7 +109,7 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
             ) : null}
             {view && !view.block ? (
               <Link
-                href={`/onboarding/hufs/${id}/invest`}
+                href={`${section.base}/${id}/invest`}
                 className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-strong"
               >
                 <Plus className="size-3.5" />
@@ -143,7 +148,7 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
               {onNse ? <RefreshAction id={id} /> : null}
               {huf.authLink && huf.status !== 'ACTIVE' ? (
                 <a href={huf.authLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:text-brand-deep">
-                  The karta&apos;s NSE authorisation link
+                  {huf.entityType === 'COMPANY' ? 'NSE authorisation link' : <>The karta&apos;s NSE authorisation link</>}
                   <ExternalLink className="size-3.5" />
                 </a>
               ) : huf.authLinkError && huf.status === 'AWAITING_KARTA' && huf.source !== 'NSE' ? (
@@ -151,7 +156,7 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
               ) : null}
               {steps.fatca?.ok && huf.status !== 'ACTIVE' && huf.source !== 'NSE' ? <ResendAction id={id} /> : null}
               {huf.status === 'AWAITING_KARTA' ? <MarkActiveAction id={id} /> : null}
-              {huf.status === 'ACTIVE' ? <p className="text-[13px] text-success">Active on NSE. The HUF invests from its own bank account.</p> : null}
+              {huf.status === 'ACTIVE' ? <p className="text-[13px] text-success">Active on NSE. The {huf.entityType === 'COMPANY' ? 'company' : 'HUF'} invests from its own bank account.</p> : null}
               {huf.canCancel ? <CancelAction id={id} /> : null}
             </CardBody>
           </Card>

@@ -44,7 +44,7 @@ function resolveLeaf(section: string, segment: string): string {
   }
 
   if (section === 'onboarding') {
-    return segment === 'hufs' ? 'HUFs' : segment;
+    return segment === 'hufs' ? 'HUFs' : segment === 'companies' ? 'Companies' : segment;
   }
 
   if (section === 'model-portfolios') {

@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { Table, Td } from '@/components/ui/table';
 import { HufDocuments } from '@/features/hufs/components/huf-documents';
-import { CopyLink, RefreshInvestments, RequestLink } from '@/features/hufs/components/invest-forms';
+import { CopyLink, NeftPayment, RefreshInvestments, RequestLink } from '@/features/hufs/components/invest-forms';
 import { HufEventLabel, HufStatusLabel, HufStatusTone, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
 import { fundsOf, inr, orderKind, orderTone, planTone, sentence, unitsText } from '@/features/hufs/portfolio';
 import type { HufDetail, HufInvestmentsView, HufOptions, HufRegistrarStatus } from '@/types/admin-api.types';
@@ -73,7 +73,7 @@ export function OnboardingPanel({ huf, options }: { huf: HufDetail; options: Huf
             ) : (
               <>
                 <Step state="done" title="Prepared" detail={`By ${huf.createdBy?.name ?? 'a colleague'} on ${formatDate(huf.createdAt)}`} />
-                <Step state={consent.state === 'GIVEN' ? 'done' : consent.state === 'EXPIRED' ? 'failed' : 'todo'} title="Karta's consent" detail={consentDetail} />
+                <Step state={consent.state === 'GIVEN' ? 'done' : consent.state === 'EXPIRED' ? 'failed' : 'todo'} title={huf.entityType === 'COMPANY' ? "Authorised signatory's consent" : "Karta's consent"} detail={consentDetail} />
                 <Step
                   state={huf.approvedBy ? 'done' : 'todo'}
                   title="Approved by a colleague"
@@ -95,8 +95,8 @@ export function OnboardingPanel({ huf, options }: { huf: HufDetail; options: Huf
             />
             <Step
               state={huf.status === 'ACTIVE' ? 'done' : 'todo'}
-              title="Karta authorises on NSE (link + OTP)"
-              detail={huf.status === 'ACTIVE' ? 'Active' : nse && nse.authorised === null ? "NSE doesn't report this for HUFs. An accepted order confirms it; then mark it active." : null}
+              title={huf.entityType === 'COMPANY' ? 'NSE activates the company' : 'Karta authorises on NSE (link + OTP)'}
+              detail={huf.status === 'ACTIVE' ? 'Active' : nse && nse.authorised === null ? "NSE doesn't report this for HUFs or companies. An accepted order confirms it; then mark it active." : null}
             />
           </ol>
         </CardBody>
@@ -137,7 +137,7 @@ function Registrar({ name, s }: { name: string; s: HufRegistrarStatus }): React.
 
 // --- Portfolio ----------------------------------------------------------------------------------------------
 
-export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvestmentsView }): React.JSX.Element {
+export function PortfolioPanel({ hufId, view, base = '/onboarding/hufs' }: { hufId: string; view: HufInvestmentsView; base?: string }): React.JSX.Element {
   const inv = view.investments;
   const funds = inv ? fundsOf(inv) : [];
   const gain = inv && inv.totals.value !== null ? inv.totals.value - inv.totals.invested : null;
@@ -150,7 +150,7 @@ export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvest
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/onboarding/hufs/${hufId}/funds`}
+            href={`${base}/${hufId}/funds`}
             className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-surface px-3.5 text-[13.5px] font-medium text-ink transition-colors hover:bg-surface-sunken"
           >
             <LayoutGrid className="size-4" />
@@ -158,7 +158,7 @@ export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvest
           </Link>
           {view.block ? null : (
             <Link
-              href={`/onboarding/hufs/${hufId}/invest`}
+              href={`${base}/${hufId}/invest`}
               className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-3.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-strong"
             >
               <Plus className="size-4" />
@@ -186,7 +186,7 @@ export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvest
               <ul className="divide-y divide-line">
                 {funds.map((f) => (
                   <li key={f.schemeCode}>
-                    <Link href={`/onboarding/hufs/${hufId}/funds/${encodeURIComponent(f.schemeCode)}`} className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-surface-sunken">
+                    <Link href={`${base}/${hufId}/funds/${encodeURIComponent(f.schemeCode)}`} className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-surface-sunken">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">{f.schemeName}</p>
                         <p className="mt-0.5 text-[12px] text-ink-muted">
@@ -271,7 +271,7 @@ export function PortfolioPanel({ hufId, view }: { hufId: string; view: HufInvest
 
 const RequestKind: Record<string, string> = { PURCHASE: 'Lumpsum purchase', MANDATE: 'eNACH mandate', SIP: 'Monthly SIP' };
 
-export function OrdersTable({ hufId, orders, linkFunds = true }: { hufId: string; orders: NonNullable<HufInvestmentsView['investments']>['orders']; linkFunds?: boolean }): React.JSX.Element {
+export function OrdersTable({ hufId, orders, linkFunds = true, base = '/onboarding/hufs' }: { hufId: string; orders: NonNullable<HufInvestmentsView['investments']>['orders']; linkFunds?: boolean; base?: string }): React.JSX.Element {
   return (
     <Table headers={['Order', 'Date', ...(linkFunds ? ['Fund'] : []), 'Type', 'Amount', 'Folio', 'Status']}>
       {orders.map((o) => (
@@ -280,7 +280,7 @@ export function OrdersTable({ hufId, orders, linkFunds = true }: { hufId: string
           <Td className="whitespace-nowrap">{o.date ?? '—'}</Td>
           {linkFunds ? (
             <Td>
-              <Link href={`/onboarding/hufs/${hufId}/funds/${encodeURIComponent(o.schemeCode)}`} className="font-medium text-ink hover:text-brand">
+              <Link href={`${base}/${hufId}/funds/${encodeURIComponent(o.schemeCode)}`} className="font-medium text-ink hover:text-brand">
                 {o.schemeName}
               </Link>
             </Td>
@@ -297,13 +297,13 @@ export function OrdersTable({ hufId, orders, linkFunds = true }: { hufId: string
   );
 }
 
-export function TransactionsPanel({ hufId, view }: { hufId: string; view: HufInvestmentsView }): React.JSX.Element {
+export function TransactionsPanel({ hufId, view, base = '/onboarding/hufs' }: { hufId: string; view: HufInvestmentsView; base?: string }): React.JSX.Element {
   const inv = view.investments;
   return (
     <div className="space-y-4">
       {view.requests.length ? (
         <Card>
-          <CardHeader title="Started from here" subtitle="Waiting on the karta until they confirm on NSE. NSE sends each link too; copy it to send it yourself." />
+          <CardHeader title="Started from here" subtitle="Waiting on the karta or signatory until they confirm on NSE. NSE sends each link too; copy it to send it yourself." />
           <CardBody>
             <ul className="space-y-4">
               {view.requests.map((q) => (
@@ -320,6 +320,16 @@ export function TransactionsPanel({ hufId, view }: { hufId: string; view: HufInv
                     {q.by ? ` · ${q.by}` : ''}
                     {q.remark ? ` · ${q.remark}` : ''}
                   </p>
+                  {q.kind === 'PURCHASE' && q.ok && q.nseId ? (
+                    q.neft?.ok ? (
+                      <p className="text-success">Paid by NEFT/RTGS · UTR {q.neft.utr}</p>
+                    ) : (
+                      <>
+                        {q.neft ? <p className="text-danger">NSE refused UTR {q.neft.utr}{q.neft.remark ? `: ${q.neft.remark}` : ''}</p> : null}
+                        <NeftPayment hufId={hufId} requestId={q.id} />
+                      </>
+                    )
+                  ) : null}
                   {q.ok ? (
                     q.link ? (
                       <CopyLink url={q.link} />
@@ -337,7 +347,7 @@ export function TransactionsPanel({ hufId, view }: { hufId: string; view: HufInv
       ) : null}
       <Card>
         <CardHeader title="Orders on NSE" subtitle="Every purchase, SIP instalment and redemption, newest first" />
-        {inv?.orders.length ? <OrdersTable hufId={hufId} orders={inv.orders} /> : <Empty>No orders on NSE yet.</Empty>}
+        {inv?.orders.length ? <OrdersTable hufId={hufId} orders={inv.orders} base={base} /> : <Empty>No orders on NSE yet.</Empty>}
       </Card>
     </div>
   );
@@ -346,6 +356,7 @@ export function TransactionsPanel({ hufId, view }: { hufId: string; view: HufInv
 // --- Family & bank ------------------------------------------------------------------------------------------
 
 export function FamilyPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
+  if (huf.entityType === 'COMPANY') return <CompanyPanel huf={huf} />;
   const d = huf.details;
   const masked = Boolean(huf.steps.ucc?.ok);
   return (
@@ -407,12 +418,87 @@ export function FamilyPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
   );
 }
 
+/** A company: its details, the authorised signatory, the beneficial owners sent to NSE, and the bank. */
+function CompanyPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
+  const d = huf.details;
+  const masked = Boolean(huf.steps.ucc?.ok);
+  const owners = d.owners ?? [];
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader title="The company" subtitle={masked ? 'Registered on NSE: shown masked, and locked.' : undefined} />
+        <CardBody>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+            <Row label="Name" value={d.hufName} />
+            <Row label="Company PAN" value={d.pan} />
+            <Row label="CIN" value={d.cin || null} />
+            <Row label="Incorporated on" value={d.formedOn ? formatDate(d.formedOn) : null} />
+            <Row label="Place of incorporation" value={d.placeOfFormation} />
+            <Row label="Nature of business" value={d.natureOfBusiness} />
+            <Row label="Net worth" value={d.netWorthLakhs ? `₹${d.netWorthLakhs} lakh${d.netWorthDate ? `, as on ${formatDate(d.netWorthDate)}` : ''}` : null} />
+          </dl>
+        </CardBody>
+      </Card>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="Authorised signatory" subtitle="Acts for the company; NSE sends every link and OTP to them" />
+          <CardBody>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <Row label="Name" value={d.karta.name || 'Not on NSE’s record: add it before the next change'} />
+              <Row label="Designation" value={d.signatoryDesignation || null} />
+              <Row label="PAN" value={d.karta.pan || null} />
+              <Row label="Email" value={d.email} />
+              <Row label="Mobile" value={d.mobile} />
+            </dl>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader title="Beneficial owners" subtitle="Sent to NSE in the FATCA declaration" />
+          {d.listed ? (
+            <CardBody>
+              <p className="text-[13px] text-ink">
+                Listed company ({d.listed.exchange === 'B' ? 'BSE' : 'NSE'}, ISIN {d.listed.isin}): no owners declared.
+              </p>
+            </CardBody>
+          ) : owners.length ? (
+            <CardBody>
+              <ul className="space-y-1.5 text-[13px] text-ink">
+                {owners.map((o) => (
+                  <li key={`${o.name}-${o.pan}`}>
+                    {o.name}{' '}
+                    <span className="text-ink-muted">
+                      · {o.pan} · {o.category === 'SMO' ? `Senior managing official${o.designation ? `, ${sentence(o.designation)}` : ''}` : `${o.holdingPct}%`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          ) : (
+            <Empty>{huf.source === 'NSE' ? "Not on NSE's record." : 'None recorded.'}</Empty>
+          )}
+        </Card>
+      </div>
+      <Card>
+        <CardHeader title="Bank and registered office" subtitle="All payments and payouts use only this current account, in the company's name" />
+        <CardBody>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+            <Row label="Account holder" value={d.bankHolderName} />
+            <Row label="Account" value={`${d.accountNo} · ${d.accountType === 'CB' ? 'Current' : 'Savings'}`} />
+            <Row label="IFSC" value={d.ifsc} />
+            <Row label="Address" value={[d.address1, d.address2, d.address3, d.city, d.pincode].filter(Boolean).join(', ')} />
+          </dl>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
 // --- History ------------------------------------------------------------------------------------------------
 
 export function HistoryPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
   return (
     <Card>
-      <CardHeader title="History" subtitle="Everything done for this HUF, newest first" />
+      <CardHeader title="History" subtitle="Everything done for this client, newest first" />
       <CardBody>
         <ol className="space-y-3.5">
           {huf.events.map((e) => (

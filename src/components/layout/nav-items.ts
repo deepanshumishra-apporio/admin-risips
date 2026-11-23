@@ -3,6 +3,7 @@ import {
   Bell,
   Bot,
   Boxes,
+  Building2,
   FileBarChart,
   Landmark,
   LayoutDashboard,
@@ -49,6 +50,7 @@ export const NavSections: NavSection[] = [
     items: [
       { label: 'Investors', href: '/investors', icon: Users, permission: 'investors.read' },
       { label: 'HUF onboarding', href: '/onboarding/hufs', icon: Landmark, permission: 'hufs.manage' },
+      { label: 'Company onboarding', href: '/onboarding/companies', icon: Building2, permission: 'hufs.manage' },
       { label: 'Agents', href: '/agents', icon: UsersRound, soon: true },
       { label: 'Staff', href: '/staff', icon: UserCog, permission: ['staff.manage', 'roles.manage'] },
     ],
