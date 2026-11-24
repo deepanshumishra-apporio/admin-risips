@@ -8,6 +8,7 @@ export type Permission =
   | 'investors.read'
   | 'reports.read'
   | 'transactions.read'
+  | 'sips.manage'
   | 'support.manage'
   | 'compliance.manage'
   | 'announcements.manage'
@@ -103,6 +104,46 @@ export type DashboardSummary = {
     activeSipMonthlyAmount: string;
     mandatesByStatus: CountByKey[];
   };
+  /** The dashboard's overview blocks. Absent from an older API. */
+  overview?: DashboardOverview;
+};
+
+export type AssetClassKey = 'EQUITY' | 'HYBRID' | 'DEBT' | 'OTHER';
+
+export type DashboardOverview = {
+  business: { aum: string; activeSips: number; activeInvestors: number };
+  investors: {
+    total: number;
+    newThisMonth: number;
+    newLast30Days: number;
+    pendingKyc: number;
+    kycRejections: number;
+    /** HUF accounts in the app plus HUFs onboarded on NSE from this admin. */
+    families: number;
+    elssInvestors: number;
+    /** Active: holds units or has a running SIP. */
+    active: number;
+    inactive: number;
+  };
+  /** Null when this staff member can't see support tickets. Escalated: urgent, or past its SLA. */
+  support: { open: number; escalated: number } | null;
+  assetClasses: { key: AssetClassKey; label: string; value: string; share: number }[];
+  /** The last 6 months, oldest first ('YYYY-MM'). */
+  sipMonths: { month: string; started: number; running: number; sipAmount: string; lumpsumAmount: string }[];
+  /** The last 12 months: net invested at each past month's end, market value for this month. */
+  aumMonths: { month: string; value: string; basis: 'NET_INVESTED' | 'MARKET_VALUE' }[];
+  queues: { failedSipDebits: number; kycPending: number; flaggedTransactions: number | null };
+  recentInvestors: {
+    id: string;
+    name: string | null;
+    pan: string | null;
+    folio: string | null;
+    aum: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'DELETION_REQUESTED';
+    signedUpAt: string | null;
+  }[];
+  /** When holdings were last valued (the AUM and asset split); null before the first run. */
+  valuedAt: string | null;
 };
 
 export type SignupBucket = 'day' | 'week' | 'month';
@@ -593,7 +634,15 @@ export type MonitoredOrder = {
   completedAt: string | null;
 };
 
-export type TransactionList = { items: MonitoredOrder[]; nextCursor: string | null };
+/** `total`: how many match the filters (absent from an older API). */
+export type TransactionList = {
+  items: (MonitoredOrder & { reference?: string; paymentMode?: 'UPI' | 'AutoPay' | null })[];
+  total?: number;
+  offset?: number;
+  /** For every filter but status: count, value of the successful ones (rupees), in progress, failed. */
+  totals?: { count: number; value: string; pending: number; failed: number };
+  nextCursor: string | null;
+};
 
 export type TransactionListQuery = {
   type?: OrderType[];
@@ -603,6 +652,7 @@ export type TransactionListQuery = {
   from?: string;
   to?: string;
   search?: string;
+  sort?: string;
   cursor?: string;
   limit?: number;
 };
@@ -805,7 +855,7 @@ export type ComplianceSummary = {
   lastScanAt: string | null;
 };
 
-export type ComplianceList = { items: ComplianceAlertItem[]; nextCursor: string | null; summary: ComplianceSummary };
+export type ComplianceList = { items: ComplianceAlertItem[]; total?: number; offset?: number; nextCursor: string | null; summary: ComplianceSummary };
 
 export type ComplianceListQuery = {
   status?: ComplianceStatus[];
@@ -974,6 +1024,9 @@ export type HufDetailsInput = {
   pincode: string;
   karta: { name: string; pan: string; dateOfBirth: string; gender: 'M' | 'F' | 'O' | ''; fatherName: string };
   coparceners: { name: string; relationship: string; dateOfBirth: string | null }[];
+  /** K KRA (default) or C CKYC; CKYC carries its 14-digit number (masked once on NSE). */
+  kycType?: 'K' | 'C';
+  ckycNumber?: string;
   /** Company only. */
   signatoryDesignation?: string;
   cin?: string;
@@ -986,7 +1039,7 @@ export type HufRegistrarStatus = { status: 'NOT_SENT' | 'PENDING' | 'ACCEPTED' |
 
 export const HufDocumentKinds = ['AOF', 'FATCA_FORM', 'CANCELLED_CHEQUE'] as const;
 export type HufDocumentKind = (typeof HufDocumentKinds)[number];
-/** The last copy sent to NSE. The file isn't kept: only what identifies it, and NSE's answer. */
+/** The last copy sent to NSE: what identifies it, NSE's answer, and the stored file (`fileId`; none for older uploads). */
 export type HufDocument = {
   ok: boolean;
   status: string;
@@ -997,6 +1050,21 @@ export type HufDocument = {
   sha256: string;
   uploadedAt: string;
   uploadedBy: string;
+  fileId?: string;
+};
+/** One upload, as stored: every attempt, newest first. Open it at /onboarding/hufs/:id/documents/:fileId. */
+export type HufFile = {
+  id: string;
+  kind: HufDocumentKind;
+  fileName: string;
+  originalName: string | null;
+  contentType: string;
+  bytes: number;
+  ok: boolean;
+  status: string;
+  remark: string | null;
+  uploadedAt: string;
+  uploadedBy: string | null;
 };
 export type HufNseStep = { ok: boolean; status: string; remark: string | null; at: string } | null;
 
@@ -1025,7 +1093,11 @@ export type HufDetail = HufListItem & {
   /** Full while the HUF can still be edited; masked once it is on NSE. */
   details: HufDetailsInput;
   consent: { state: 'NONE' | 'PENDING' | 'EXPIRED' | 'GIVEN'; at: string | null; ip: string | null; expiresAt: string | null };
-  steps: { duplicateCheck: { at: string; codes: string[] } | null; ucc: HufNseStep; fatca: HufNseStep };
+  steps: {
+    duplicateCheck: { at: string; codes: string[] } | null; ucc: HufNseStep; fatca: HufNseStep;
+    /** A corrected FATCA waiting for consent and approval (the client is already on NSE). */
+    fatcaCorrection?: { from: HufStatus; at: string; by: string } | null;
+  };
   nse: {
     bankStatus: string | null;
     bankRemark: string | null;
@@ -1033,9 +1105,13 @@ export type HufDetail = HufListItem & {
     authorised: boolean | null;
     /** The signed AOF at CAMS and KFin; null until one is uploaded. */
     aof?: { cams: HufRegistrarStatus; kfin: HufRegistrarStatus; uploadedAt: string | null } | null;
+    /** NSE's KYC check on the entity's PAN (Client KYC Status Report); `failed` blocks orders. */
+    kyc?: { status: string; remark: string | null; failed: boolean } | null;
     checkedAt: string;
   } | null;
   documents: Partial<Record<HufDocumentKind, HufDocument>>;
+  /** Every document uploaded from here, with the file kept to open. Absent on an older API. */
+  files?: HufFile[];
   canUploadDocuments: boolean;
   authLink: string | null;
   authLinkError: string | null;
@@ -1045,6 +1121,8 @@ export type HufDetail = HufListItem & {
   canEdit: boolean;
   canCancel: boolean;
   canRequestConsent: boolean;
+  /** On NSE and the FATCA not yet accepted by both registrars: a corrected one can be sent. */
+  canCorrectFatca?: boolean;
   /** Why this staff member can't approve it now; null when they can (or approval isn't the next step). */
   approval: string | null;
   events: { id: string; type: string; staffName: string | null; note: string | null; createdAt: string }[];
@@ -1187,10 +1265,10 @@ export type HufInvestments = {
   readAt: string;
 };
 
-/** A purchase, mandate or SIP started from the admin, with NSE's link for the karta. */
+/** A purchase, redemption, mandate, SIP or SIP cancellation started from the admin, with NSE's link for the investor. */
 export type HufRequest = {
   id: string;
-  kind: 'PURCHASE' | 'MANDATE' | 'SIP';
+  kind: 'PURCHASE' | 'MANDATE' | 'SIP' | 'REDEMPTION' | 'SIP_CANCEL';
   nseId: string | null;
   ok: boolean;
   status: string;
@@ -1216,6 +1294,8 @@ export type HufInvestmentsView = {
   live: boolean;
   approvedMandates: { mandateId: string; amount: number | null; endDate: string | null; bankName: string | null }[];
   folios: { schemeCode: string; folio: string }[];
+  /** NSE's reasons for stopping a SIP, by code ("13" is Other, with a written reason). */
+  sipCancelReasons?: Record<string, string>;
 };
 
 // --- Fund returns by AMC report ---------------------------------------------------------------------------------
@@ -1247,3 +1327,97 @@ export type FundReturnsReport = {
     | null;
   truncated: boolean;
 };
+
+/** Where a SIP stands. Bounced: live, but its latest instalment failed. Running = the first four. */
+export type SipStatus = 'ACTIVE' | 'PAUSED' | 'BOUNCED' | 'AWAITING_PAYMENT' | 'CANCELLED' | 'COMPLETED' | 'FAILED';
+export type SipFrequency = 'daily' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly';
+
+export type SipSummary = {
+  activeSips: number;
+  /** Every running SIP on a monthly footing (a weekly ₹1,000 counts as ₹4,333). */
+  monthlyBook: string;
+  averagePerInvestor: string;
+  investors: number;
+  bounced: number;
+  paused: number;
+  amcs: string[];
+  generatedAt: string;
+};
+
+export type SipListItem = {
+  id: string;
+  /** FP's plan id, shown as the SIP ID. */
+  reference: string;
+  investor: { id: string; name: string | null; pan: string | null } | null;
+  folio: string | null;
+  scheme: string;
+  isin: string;
+  amc: string | null;
+  amount: string;
+  frequency: string;
+  startDate: string | null;
+  nextInstallmentDate: string | null;
+  installmentsPaid: number;
+  /** Null for a SIP that runs until cancelled. */
+  installmentsTotal: number | null;
+  status: SipStatus;
+  createdAt: string | null;
+};
+
+export type SipList = { items: SipListItem[]; total: number; offset: number; nextCursor: string | null };
+
+export type SipInstalmentStatus = 'UPCOMING' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'SKIPPED';
+
+export type SipDetail = SipListItem & {
+  endDate: string | null;
+  sipDay: number | null;
+  pause: { from: string | null; to: string | null } | null;
+  cancelledAt: string | null;
+  /** Newest first; the next one, if the SIP is running, is first and UPCOMING. */
+  instalments: { number: number; date: string | null; amount: string | null; units: string | null; status: SipInstalmentStatus; reason: string | null }[];
+  mandate: { id: string; status: string | null; type: string | null; maxAmount: string | null; validFrom: string | null; validUntil: string | null } | null;
+  bank: { bankName: string | null; accountMasked: string; ifsc: string } | null;
+};
+
+export type TransactionStep = { key: string; label: string; at: string | null; by: string | null; tone: 'done' | 'failed' | 'pending' };
+
+/** One transaction in full, for its page. `retry`: refresh (in progress), redeem (a failed redemption) or none, and why not. */
+export type TransactionDetail = {
+  order: MonitoredOrder;
+  reference: string;
+  paymentMode: 'UPI' | 'AutoPay' | null;
+  paymentReference: string | null;
+  nav: string | null;
+  isin: string | null;
+  timeline: TransactionStep[];
+  retry: { kind: 'refresh' | 'redeem' | 'none'; reason: string | null };
+};
+
+export type AumSummary = {
+  aum: string;
+  invested: string;
+  investors: number;
+  folios: number;
+  schemes: number;
+  amcs: string[];
+  assetClasses: { key: AssetClassKey; label: string }[];
+  /** When holdings were last valued; null before the first run. */
+  valuedAt: string | null;
+};
+
+export type AumHolding = {
+  investor: { id: string; name: string | null; pan: string | null };
+  folio: string;
+  scheme: string;
+  isin: string;
+  amc: string | null;
+  assetClass: AssetClassKey;
+  units: string;
+  /** Null when the app backend sent no cost for the holding. */
+  invested: string | null;
+  current: string;
+  gainPercent: number | null;
+  navDate: string | null;
+};
+
+export type AumList = { items: AumHolding[]; total: number; offset: number; nextCursor: string | null };

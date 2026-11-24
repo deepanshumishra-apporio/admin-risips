@@ -10,8 +10,18 @@ export type TransactionFilters = {
   attention: boolean;
   from: string;
   to: string;
+  /** latest (default), oldest, amount_desc, amount_asc. */
+  sort: string;
+  /** The row offset of the page shown (the API's cursor). */
   cursor: string | null;
 };
+
+export const TransactionSorts = [
+  { value: 'latest', label: 'Latest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'amount_desc', label: 'Highest amount' },
+  { value: 'amount_asc', label: 'Lowest amount' },
+] as const;
 
 type RawParams = Record<string, string | string[] | undefined>;
 
@@ -39,6 +49,7 @@ export function parseTransactionFilters(params: RawParams): TransactionFilters {
     attention: first(params['attention']) === 'true',
     from: DatePattern.test(from) ? from : '',
     to: DatePattern.test(to) ? to : '',
+    sort: TransactionSorts.some((o) => o.value === first(params['sort'])) ? first(params['sort']) : 'latest',
     cursor: /^[A-Za-z0-9_-]{1,200}$/.test(cursor) ? cursor : null,
   };
 }
@@ -53,6 +64,7 @@ export function toTransactionQuery(filters: TransactionFilters, limit: number): 
     ...(filters.attention && { attention: true }),
     ...(filters.from && { from: filters.from }),
     ...(filters.to && filters.to >= filters.from && { to: filters.to }),
+    ...(filters.sort && filters.sort !== 'latest' && { sort: filters.sort }),
     ...(filters.cursor && { cursor: filters.cursor }),
   };
 }
@@ -66,6 +78,7 @@ export function transactionsHref(filters: Partial<TransactionFilters>): string {
   if (filters.attention) params.set('attention', 'true');
   if (filters.from) params.set('from', filters.from);
   if (filters.to) params.set('to', filters.to);
+  if (filters.sort && filters.sort !== 'latest') params.set('sort', filters.sort);
   if (filters.cursor) params.set('cursor', filters.cursor);
   const text = params.toString();
   return text ? `/transactions?${text}` : '/transactions';

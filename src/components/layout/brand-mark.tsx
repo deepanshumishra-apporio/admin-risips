@@ -18,9 +18,10 @@ import { cn } from '@/utils/cn';
  * Two tones only, as on the sheet: blue on paper, and white on blue. The point
  * and the i-dots stay yellow on both.
  */
-type MarkTone = 'brand' | 'inverse';
+type MarkTone = 'brand' | 'inverse' | 'theme';
 
-const Ink: Record<MarkTone, string> = { brand: LogoColors.blue, inverse: '#ffffff' };
+/** `theme`: blue in the light theme, white in the dark one (the sidebar, which follows the theme). */
+const Ink: Record<MarkTone, string> = { brand: LogoColors.blue, inverse: '#ffffff', theme: 'var(--color-logo-ink)' };
 
 /** The square mark alone — favicons, the collapsed rail, small places. */
 export function BrandMark({ size = 28, tone = 'brand', className }: { size?: number; tone?: MarkTone; className?: string }): React.JSX.Element {

@@ -58,6 +58,8 @@ function readForm(form: FormData): HufDetailsInput & { accountNoConfirm: string 
   return {
     entityType: company ? 'COMPANY' : 'HUF',
     ...(company && { signatoryDesignation: text(form, 'signatoryDesignation'), cin: text(form, 'cin'), owners: listed ? [] : owners, listed }),
+    kycType: text(form, 'kycType') === 'C' ? 'C' : 'K',
+    ckycNumber: text(form, 'ckycNumber'),
     clientCode: text(form, 'clientCode'),
     hufName: text(form, 'hufName'),
     pan: text(form, 'pan'),
@@ -109,7 +111,9 @@ export async function saveHuf(_previous: HufFormState, form: FormData): Promise<
   const values = readForm(form);
   let saved: HufDetail;
   try {
-    saved = await authedRequest<HufDetail>(id ? `/hufs/${id}` : '/hufs', { method: id ? 'PUT' : 'POST', body: values });
+    // A FATCA correction (a client already on NSE) has its own route; it takes only the FATCA fields.
+    const path = id ? (text(form, 'mode') === 'fatca' ? `/hufs/${id}/fatca` : `/hufs/${id}`) : '/hufs';
+    saved = await authedRequest<HufDetail>(path, { method: id ? 'PUT' : 'POST', body: values });
   } catch (error) {
     return { ...failure(error), values, attempt: Date.now() };
   }
@@ -191,7 +195,7 @@ export async function syncHufsFromNse(_previous: HufActionState): Promise<HufAct
 const DocumentTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/tiff']);
 const MaxDocumentBytes = 3 * 1024 * 1024;
 
-/** A signed document (AOF, FATCA form, cancelled cheque), passed to NSE through the API. It isn't kept here. */
+/** A signed document (AOF, FATCA form, cancelled cheque), passed to NSE through the API, which keeps a sealed copy to open later. */
 export async function uploadHufDocument(_previous: HufActionState, form: FormData): Promise<HufActionState> {
   const id = text(form, 'id');
   const kind = text(form, 'kind');
@@ -201,7 +205,7 @@ export async function uploadHufDocument(_previous: HufActionState, form: FormDat
   if (!DocumentTypes.has(file.type)) return { error: 'Upload a PDF, JPG, PNG or TIFF.' };
   if (file.size > MaxDocumentBytes) return { error: 'The file is over 3 MB. Scan it at a lower resolution, or as a PDF.' };
   const data = Buffer.from(await file.arrayBuffer()).toString('base64');
-  return act(form, 'documents', 'Sent to NSE.', { kind, contentType: file.type, data });
+  return act(form, 'documents', 'Sent to NSE.', { kind, contentType: file.type, data, fileName: file.name });
 }
 
 // --- the karta's consent page (no staff session) -----------------------------------------

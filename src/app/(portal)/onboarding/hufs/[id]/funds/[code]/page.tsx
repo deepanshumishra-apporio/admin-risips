@@ -13,6 +13,7 @@ import { Table, Td } from '@/components/ui/table';
 import { cutoffText, fundName, fundTags, navDateLong } from '@/features/hufs/components/fund-explorer';
 import { pct, ReturnsGrid } from '@/features/hufs/components/fund-bits';
 import { OrdersTable } from '@/features/hufs/components/huf-record';
+import { RedeemForm, StopSipForm } from '@/features/hufs/components/invest-forms';
 import { NavChart } from '@/features/hufs/components/nav-chart';
 import { fundsOf, inr, planTone, sentence, unitsText } from '@/features/hufs/portfolio';
 import { ApiError } from '@/lib/api/errors';
@@ -238,6 +239,13 @@ export default async function HufFundPage({ params }: FundPageProps): Promise<Re
             <p className="text-[13px] text-ink-muted">No units in this fund yet.{orders.length ? ' See its orders under Transactions.' : ''}</p>
           </CardBody>
         )}
+        {!view.block && scheme?.redemptionAllowed !== false && folios.some((h) => h.folio && h.units > 0) ? (
+          <CardBody className="space-y-2 border-t border-line">
+            {folios.filter((h) => h.folio && h.units > 0).map((h) => (
+              <RedeemForm key={h.folio} hufId={id} schemeCode={code} folio={h.folio!} units={h.units} />
+            ))}
+          </CardBody>
+        ) : null}
       </Card>
     </div>
   );
@@ -288,6 +296,9 @@ export default async function HufFundPage({ params }: FundPageProps): Promise<Re
                   <span className="text-ink-muted"> · from {s.startDate ?? '—'} · {s.installments ?? '—'} instalments · {s.registrationNo}</span>
                 </span>
                 <Badge tone={planTone(s.status)}>{sentence(s.status)}</Badge>
+                {view.sipCancelReasons && !/CANCEL|CEASE|CLOSE|EXPIRE/i.test(s.status) ? (
+                  <StopSipForm hufId={id} regNo={s.registrationNo} reasons={view.sipCancelReasons} />
+                ) : null}
               </li>
             ))}
           </ul>

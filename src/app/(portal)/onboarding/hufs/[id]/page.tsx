@@ -138,6 +138,20 @@ export default async function HufPage({ params, searchParams }: HufPageProps): P
             <CardHeader title="Next" />
             <CardBody className="space-y-4">
               {huf.canRequestConsent ? <ConsentLinkAction id={id} again={huf.consent.state !== 'NONE'} /> : null}
+              {huf.canCorrectFatca ? (
+                <div className="space-y-1">
+                  <Link
+                    href={`${section.base}/${id}/fatca`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
+                  >
+                    <Pencil className="size-3.5" />
+                    Correct the FATCA
+                  </Link>
+                  <p className="text-[12px] text-ink-muted">
+                    If CAMS or KFin rejected it, or the owners or {huf.entityType === 'COMPANY' ? 'signatory' : 'karta'} are missing. It needs consent and approval again.
+                  </p>
+                </div>
+              ) : null}
               {huf.status === 'CONSENTED' || huf.status === 'NSE_FAILED' ? (
                 huf.approval ? (
                   <p className="text-[13px] text-ink-soft">{huf.approval}</p>

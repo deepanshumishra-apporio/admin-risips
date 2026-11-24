@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 
 import { ApiError } from '@/lib/api/errors';
 import { authedRequest } from '@/lib/auth/session';
-import type { ComplianceScanResult } from '@/types/admin-api.types';
 
 export type AlertFormState = { error: string | null; done?: string };
 
@@ -53,18 +52,6 @@ export async function actOnAlert(_previous: AlertFormState, form: FormData): Pro
     return { error: null, done: Done[type] };
   } catch (error) {
     if (error instanceof ApiError) return { error: error.message };
-    throw error;
-  }
-}
-
-/** "Run checks now": one scan straight away instead of waiting for the next scheduled one. */
-export async function runChecks(): Promise<{ error: string | null; result: ComplianceScanResult | null }> {
-  try {
-    const result = await authedRequest<ComplianceScanResult>('/compliance/scan', { method: 'POST' });
-    revalidatePath('/compliance');
-    return { error: null, result };
-  } catch (error) {
-    if (error instanceof ApiError) return { error: error.message, result: null };
     throw error;
   }
 }

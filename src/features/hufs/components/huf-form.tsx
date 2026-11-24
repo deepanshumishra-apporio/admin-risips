@@ -26,24 +26,30 @@ type HufFormProps = {
   /** For a new record; an existing one keeps its own type. */
   entityType?: EntityType;
   options: HufOptions;
+  /**
+   * A FATCA correction for a client already on NSE: only what goes into the FATCA declaration (formation, income,
+   * net worth, the karta or signatory and the owners). Identity, bank, contact and address stay as registered.
+   */
+  fatcaOnly?: boolean;
 };
 
 /**
  * Everything NSE needs to register a HUF or a company. Saving keeps it as a draft: nothing goes to NSE until the
  * karta (or the company's authorised signatory) has consented and a colleague approves.
  */
-export function HufForm({ id, initial, entityType, options }: HufFormProps): React.JSX.Element {
+export function HufForm({ id, initial, entityType, options, fatcaOnly = false }: HufFormProps): React.JSX.Element {
   const [state, action] = useActionState(saveHuf, Initial);
   // Remounted from what was submitted after each failed save, so nothing typed is lost.
   return (
-    <Fields key={state.attempt ?? 0} id={id} initial={state.values ?? initial} entityType={entityType} options={options} state={state} action={action} />
+    <Fields key={state.attempt ?? 0} id={id} initial={state.values ?? initial} entityType={entityType} options={options} state={state} action={action} fatcaOnly={fatcaOnly} />
   );
 }
 
 type FieldsProps = HufFormProps & { state: HufFormState; action: (form: FormData) => void };
 
-function Fields({ id, initial, entityType, options, state, action }: FieldsProps): React.JSX.Element {
+function Fields({ id, initial, entityType, options, state, action, fatcaOnly = false }: FieldsProps): React.JSX.Element {
   const f = state.fields;
+  const full = !fatcaOnly;
   const d = initial;
   const company = (d?.entityType ?? entityType ?? 'HUF') === 'COMPANY';
   const word = company ? 'company' : 'HUF';
@@ -62,6 +68,7 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
     <form action={action} className="grid max-w-4xl gap-4">
       {id ? <input type="hidden" name="id" value={id} /> : null}
       <input type="hidden" name="entityType" value={company ? 'COMPANY' : 'HUF'} />
+      {fatcaOnly ? <input type="hidden" name="mode" value="fatca" /> : null}
       <FormError message={state.error} />
 
       <Card>
@@ -74,6 +81,8 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
           }
         />
         <CardBody className="grid gap-4 sm:grid-cols-2">
+          {full ? (
+          <>
           <Field label={company ? 'Registered name' : 'HUF name'} hint={company ? 'e.g. TESTCO PRIVATE LIMITED' : 'Ends in HUF, e.g. RAJESH KUMAR HUF'} required>
             <TextInput name="hufName" defaultValue={d?.hufName} maxLength={70} required />
             <Err fields={f} name="hufName" />
@@ -82,6 +91,8 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             <TextInput name="pan" defaultValue={d?.pan} maxLength={10} className="uppercase" required />
             <Err fields={f} name="pan" />
           </Field>
+          </>
+          ) : null}
           <Field label={company ? 'Date of incorporation' : 'Date the HUF was formed'} required>
             <TextInput type="date" name="formedOn" defaultValue={d?.formedOn} required />
             <Err fields={f} name="formedOn" />
@@ -90,20 +101,37 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             <TextInput name="placeOfFormation" defaultValue={d?.placeOfFormation} maxLength={60} required />
             <Err fields={f} name="placeOfFormation" />
           </Field>
-          {company ? (
+          {company && full ? (
             <Field label="CIN" hint="Corporate Identification Number, kept on record (NSE has no field for it)">
               <TextInput name="cin" defaultValue={d?.cin} maxLength={21} className="uppercase" />
               <Err fields={f} name="cin" />
             </Field>
           ) : null}
+          {full ? (
+          <>
+          <Field label="KYC" hint={company ? "How the company's KYC was done. NSE checks it on the company's PAN." : "How the HUF's KYC was done. NSE checks it on the HUF's PAN."} required>
+            <SelectInput name="kycType" defaultValue={d?.kycType ?? 'K'} required>
+              <option value="K">KRA compliant</option>
+              <option value="C">CKYC compliant</option>
+            </SelectInput>
+            <Err fields={f} name="kycType" />
+          </Field>
+          <Field label="CKYC number" hint="Only for CKYC: the 14-digit number from the CKYC registry">
+            <TextInput name="ckycNumber" defaultValue={d?.ckycNumber} maxLength={17} inputMode="numeric" />
+            <Err fields={f} name="ckycNumber" />
+          </Field>
+          </>
+          ) : null}
           <Field label="Nature of business" hint={company ? 'e.g. SOFTWARE SERVICES, MANUFACTURING' : 'e.g. BUSINESS, PHARMACY'} required>
             <TextInput name="natureOfBusiness" defaultValue={d?.natureOfBusiness ?? 'BUSINESS'} maxLength={30} required />
             <Err fields={f} name="natureOfBusiness" />
           </Field>
+          {full ? (
           <Field label="NSE client code" hint={company ? 'The company series: RSPC000001, RSPC000002 …' : 'The HUF series: RSPH000001, RSPH000002 …'} required>
             <TextInput name="clientCode" defaultValue={d?.clientCode ?? defaultCode} maxLength={10} className="uppercase" required />
             <Err fields={f} name="clientCode" />
           </Field>
+          ) : null}
           <Field label="Income slab" required>
             <SelectInput name="incomeSlab" defaultValue={d?.incomeSlab ?? ''} required>
               <option value="" disabled>
@@ -149,7 +177,8 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             <Err fields={f} name="karta.pan" />
           </Field>
           <Field label={`${Who}'s date of birth`} required>
-            <TextInput type="date" name="karta.dateOfBirth" defaultValue={d?.karta.dateOfBirth} required />
+            <TextInput type="date" name="karta.dateOfBirth" defaultValue={d?.karta.dateOfBirth} required={full} />
+            {fatcaOnly ? <p className="mt-1 text-[11.5px] text-ink-muted">Leave blank to keep the saved date.</p> : null}
             <Err fields={f} name="karta.dateOfBirth" />
           </Field>
           <Field label={`${Who}'s gender`} required>
@@ -174,6 +203,8 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
           ) : (
             <span />
           )}
+          {full ? (
+          <>
           <Field label={`${Who}'s email`} hint="NSE sends every authorisation link here" required>
             <TextInput type="email" name="email" defaultValue={d?.email} maxLength={100} required />
             <Err fields={f} name="email" />
@@ -182,6 +213,8 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             <TextInput name="mobile" defaultValue={d?.mobile} inputMode="numeric" maxLength={10} required />
             <Err fields={f} name="mobile" />
           </Field>
+          </>
+          ) : null}
         </CardBody>
       </Card>
 
@@ -216,7 +249,7 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
               <>
                 <Err fields={f} name="owners" />
                 {owners.map((o, index) => (
-                  <OwnerRow
+                  <OwnerRow keepDates={fatcaOnly}
                     key={index}
                     index={index}
                     owner={o}
@@ -241,7 +274,7 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             )}
           </CardBody>
         </Card>
-      ) : (
+      ) : full ? (
         <Card>
           <CardHeader title="3. Co-parceners" subtitle="The family members in the HUF, as on the HUF declaration. Kept on record; NSE has no field for them." />
           <CardBody className="space-y-3">
@@ -279,8 +312,10 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
             </button>
           </CardBody>
         </Card>
-      )}
+      ) : null}
 
+      {full ? (
+      <>
       <Card>
         <CardHeader
           title={`4. The ${word}'s bank account`}
@@ -362,11 +397,16 @@ function Fields({ id, initial, entityType, options, state, action }: FieldsProps
         </CardBody>
       </Card>
 
+      </>
+      ) : null}
+
       <p className="text-[12px] text-ink-muted">
-        Nothing goes to NSE until the {who} has consented on the link you send them and a colleague approves.
+        {fatcaOnly
+          ? `The corrected FATCA goes to NSE only after the ${who} consents on a new link and a colleague approves. Then upload the newly signed FATCA form.`
+          : `Nothing goes to NSE until the ${who} has consented on the link you send them and a colleague approves.`}
       </p>
       <div className="max-w-xs">
-        <SubmitButton>{id ? 'Save changes' : 'Save as draft'}</SubmitButton>
+        <SubmitButton>{fatcaOnly ? 'Save corrected FATCA' : id ? 'Save changes' : 'Save as draft'}</SubmitButton>
       </div>
     </form>
   );
@@ -378,10 +418,12 @@ type OwnerRowProps = {
   fields: Record<string, string> | undefined;
   onCategory: (category: CompanyOwner['category']) => void;
   onRemove: (() => void) | null;
+  /** A FATCA correction: a blank date keeps the saved one. */
+  keepDates?: boolean;
 };
 
 /** One beneficial owner: a shareholder above 10% (with holding), or the senior managing official (with designation). */
-function OwnerRow({ index, owner, fields, onCategory, onRemove }: OwnerRowProps): React.JSX.Element {
+function OwnerRow({ index, owner, fields, onCategory, onRemove, keepDates = false }: OwnerRowProps): React.JSX.Element {
   const at = `owners.${index}`;
   const smo = owner.category === 'SMO';
   return (
@@ -426,7 +468,8 @@ function OwnerRow({ index, owner, fields, onCategory, onRemove }: OwnerRowProps)
           <Err fields={fields} name={`${at}.pan`} />
         </Field>
         <Field label="Date of birth" required>
-          <TextInput type="date" name={`${at}.dateOfBirth`} defaultValue={owner.dateOfBirth} required />
+          <TextInput type="date" name={`${at}.dateOfBirth`} defaultValue={owner.dateOfBirth} required={!keepDates} />
+          {keepDates ? <p className="mt-1 text-[11.5px] text-ink-muted">Leave blank to keep the saved date.</p> : null}
           <Err fields={fields} name={`${at}.dateOfBirth`} />
         </Field>
         <Field label="Gender" required>

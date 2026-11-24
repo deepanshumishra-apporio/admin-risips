@@ -2,25 +2,18 @@ import type { Metadata } from 'next';
 
 import { PageHeader } from '@/components/layout/page-header';
 import { NoAccess } from '@/components/ui/no-access';
-import { AttentionPanel } from '@/features/dashboard/components/attention-panel';
-import { JourneyStages } from '@/features/dashboard/components/journey-stages';
-import { KycBreakdown } from '@/features/dashboard/components/kyc-breakdown';
-import { OnboardingFunnel } from '@/features/dashboard/components/onboarding-funnel';
-import { SignupTrend } from '@/features/dashboard/components/signup-trend';
-import { SummaryKpis } from '@/features/dashboard/components/summary-kpis';
-import { getDashboardSummary, getSignupSeries } from '@/lib/api/admin';
+import { AssetBreakup } from '@/features/dashboard/components/asset-breakup';
+import { AumGrowth } from '@/features/dashboard/components/aum-growth';
+import { InvestorSummary } from '@/features/dashboard/components/investor-summary';
+import { MetricSection } from '@/features/dashboard/components/metric-section';
+import { NeedsAttention } from '@/features/dashboard/components/needs-attention';
+import { RecentInvestors } from '@/features/dashboard/components/recent-investors';
+import { SipDistribution } from '@/features/dashboard/components/sip-distribution';
+import { getDashboardSummary } from '@/lib/api/admin';
 import { hasPermission } from '@/lib/auth/session';
-import { formatDateTime } from '@/utils/format';
+import { formatCount, formatDateTime, formatInrString } from '@/utils/format';
 
 export const metadata: Metadata = { title: 'Dashboard · RiSips Admin' };
-
-/** Twelve weeks back from today, as the API's India-local dates. */
-function trendRange(): { from: string; to: string } {
-  const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-  const to = istNow.toISOString().slice(0, 10);
-  const from = new Date(istNow.getTime() - 83 * 86_400_000).toISOString().slice(0, 10);
-  return { from, to };
-}
 
 export default async function DashboardPage(): Promise<React.JSX.Element> {
   if (!(await hasPermission('dashboard.read'))) {
@@ -32,37 +25,77 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
     );
   }
 
-  const [summary, series] = await Promise.all([
-    getDashboardSummary(),
-    getSignupSeries({ ...trendRange(), bucket: 'week' }),
-  ]);
+  const summary = await getDashboardSummary();
+  const o = summary.overview;
+  if (!o) {
+    return (
+      <>
+        <PageHeader title="Dashboard" />
+        <p className="text-[13.5px] text-ink-muted">The admin API is out of date for this dashboard. Deploy the latest admin backend.</p>
+      </>
+    );
+  }
 
   return (
     <>
       <PageHeader
         title="Dashboard"
         description={
-          summary.dataAsOf
-            ? `Signups, KYC and investments across every investor. Investor figures as of ${formatDateTime(summary.dataAsOf)}; they refresh every minute.`
-            : 'Investor figures are being prepared for the first time. Refresh in a minute.'
+          o.valuedAt
+            ? `Holdings valued ${formatDateTime(o.valuedAt)}; they refresh every 15 minutes.`
+            : 'Holdings are being valued for the first time. AUM fills in within a few minutes.'
         }
       />
 
-      <SummaryKpis summary={summary} />
+      <div className="space-y-6">
+        <MetricSection
+          title="Business metrics"
+          metrics={[
+            { label: 'Total AUM', value: formatInrString(o.business.aum), hint: 'Current market value of every investor’s holdings, from the last valuation.' },
+            { label: 'Active SIPs', value: formatCount(o.business.activeSips), caption: `${formatInrString(summary.investments.activeSipMonthlyAmount)} a month` },
+            { label: 'Active investors', value: formatCount(o.business.activeInvestors), hint: 'Holds units or has a running SIP.' },
+          ]}
+        />
 
-      <div className="mt-6 space-y-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <SignupTrend series={series} />
+        <MetricSection
+          title="Investor metrics"
+          metrics={[
+            { label: 'New investors', value: formatCount(o.investors.newThisMonth), caption: `This month · ${formatCount(o.investors.newLast30Days)} in the last 30 days` },
+            { label: 'Pending KYC', value: formatCount(o.investors.pendingKyc), hint: 'Signed up, KYC not started or not finished.', href: '/investors?kyc=NOT_STARTED,IN_PROGRESS' },
+            {
+              label: 'KYC rejections',
+              value: formatCount(o.investors.kycRejections),
+              hint: 'KYC failed or expired, or the PAN check did not pass.',
+              href: '/investors?kyc=FAILED,EXPIRED,PAN_CHECK_FAILED',
+            },
+          ]}
+        />
+
+        {o.support ? (
+          <MetricSection
+            title="Support metrics"
+            columns={2}
+            metrics={[
+              { label: 'Open tickets', value: formatCount(o.support.open), href: '/support' },
+              { label: 'Escalated tickets', value: formatCount(o.support.escalated), hint: 'Open tickets that are urgent or past their SLA.', href: '/support' },
+            ]}
+          />
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <AssetBreakup classes={o.assetClasses} />
+          <InvestorSummary investors={o.investors} asOf={summary.dataAsOf} />
+          <SipDistribution months={o.sipMonths} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <AumGrowth months={o.aumMonths} />
           </div>
-          <AttentionPanel attention={summary.attention} />
+          <NeedsAttention queues={o.queues} />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <OnboardingFunnel funnel={summary.funnel} byAccountType={summary.funnelByAccountType} />
-          <KycBreakdown kyc={summary.kyc} />
-          <JourneyStages summary={summary} />
-        </div>
+        <RecentInvestors investors={o.recentInvestors} />
       </div>
     </>
   );

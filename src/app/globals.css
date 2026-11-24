@@ -6,9 +6,9 @@
  * portal and the investor app read as one product.
  *
  * Two themes on one layout, from the design file: light (white cards on a pale
- * page) and dark (navy cards on near-black). The sidebar is navy in both — it
- * opts into the dark values with `.theme-dark`, as does the sign-in screen,
- * which is always dark.
+ * page) and dark (navy cards on near-black). The sidebar follows the theme too
+ * (white on light, navy on dark); the sign-in screen opts into the dark values
+ * with `.theme-dark` and is always dark.
  *
  * The theme is chosen in the account menu and kept in a cookie; with none set
  * it follows the operating system. The root layout puts the choice on <html> as
@@ -19,6 +19,8 @@
   --color-canvas: #f6f8fb;
   /* The top bar and footer: white on the light page, the page itself on dark. */
   --color-chrome: #ffffff;
+  /* The logo: brand blue on the light sidebar, white on the navy one. */
+  --color-logo-ink: #0160c2;
   --color-surface: #ffffff;
   --color-surface-sunken: #f3f6f9;
   --color-line: #e3e7ed;
@@ -67,6 +69,7 @@
   color-scheme: dark;
   --color-canvas: #020b1b;
   --color-chrome: #020b1b;
+  --color-logo-ink: #ffffff;
   --color-surface: #0a162d;
   --color-surface-sunken: #13213b;
   --color-line: #1b2842;
@@ -98,6 +101,7 @@
     color-scheme: dark;
     --color-canvas: #020b1b;
     --color-chrome: #020b1b;
+    --color-logo-ink: #ffffff;
     --color-surface: #0a162d;
     --color-surface-sunken: #13213b;
     --color-line: #1b2842;

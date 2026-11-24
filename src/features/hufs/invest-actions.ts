@@ -51,6 +51,28 @@ export async function registerSip(_previous: InvestState, form: FormData): Promi
   }, 'SIP registered. The karta or signatory approves it on NSE.');
 }
 
+/** Sells from a folio: an amount, a number of units, or all units. The investor authorises it on NSE (RED link). */
+export async function placeRedemption(_previous: InvestState, form: FormData): Promise<InvestState> {
+  if (form.get('confirm') !== 'on') return { error: 'Tick the box to confirm the redemption.' };
+  const by = text(form, 'by');
+  const all = by === 'all';
+  return send(form, 'redeem', {
+    schemeCode: text(form, 'schemeCode'), folio: text(form, 'folio'), all,
+    by: by === 'units' ? 'units' : 'amount',
+    ...(!all && by === 'units' && { units: Number(text(form, 'value')) }),
+    ...(!all && by !== 'units' && { amount: Number(text(form, 'value')) }),
+  }, 'Redemption placed. The karta or signatory authorises it on NSE; the money goes to the registered bank account.');
+}
+
+/** Stops a SIP with one of NSE's reasons. The investor authorises the cancellation on NSE (XSIP_CAN link). */
+export async function cancelSip(_previous: InvestState, form: FormData): Promise<InvestState> {
+  const regNo = text(form, 'regNo');
+  if (!/^\d{1,20}$/.test(regNo)) return { error: 'That SIP could not be found.' };
+  if (form.get('confirm') !== 'on') return { error: 'Tick the box to confirm stopping the SIP.' };
+  return send(form, `sips/${regNo}/cancel`, { reason: text(form, 'reason'), other: text(form, 'other') },
+    'Cancellation sent. The karta or signatory authorises it on NSE.');
+}
+
 export async function refreshInvestments(_previous: InvestState, form: FormData): Promise<InvestState> {
   return send(form, 'investments/refresh', undefined, 'Read from NSE just now.');
 }

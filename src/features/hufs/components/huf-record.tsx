@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { Table, Td } from '@/components/ui/table';
 import { HufDocuments } from '@/features/hufs/components/huf-documents';
-import { CopyLink, NeftPayment, RefreshInvestments, RequestLink } from '@/features/hufs/components/invest-forms';
+import { CopyLink, NeftPayment, RefreshInvestments, RequestLink, StopSipForm } from '@/features/hufs/components/invest-forms';
 import { HufEventLabel, HufStatusLabel, HufStatusTone, RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
 import { fundsOf, inr, orderKind, orderTone, planTone, sentence, unitsText } from '@/features/hufs/portfolio';
 import type { HufDetail, HufInvestmentsView, HufOptions, HufRegistrarStatus } from '@/types/admin-api.types';
@@ -93,6 +93,13 @@ export function OnboardingPanel({ huf, options }: { huf: HufDetail; options: Huf
               title="NSE's bank check"
               detail={nse ? `${sentence(nse.bankStatus ?? 'Not reported yet')}${nse.bankRemark ? ` · ${nse.bankRemark}` : ''}` : onNse ? 'Refresh to read it (a few minutes after registration)' : null}
             />
+            {nse?.kyc ? (
+              <Step
+                state={nse.kyc.failed ? 'failed' : /VERIF|VALID|SUCCESS|COMPLIANT|REGISTERED/i.test(nse.kyc.status) ? 'done' : 'todo'}
+                title="NSE's KYC check"
+                detail={`${nse.kyc.status}${nse.kyc.remark ? ` · ${nse.kyc.remark}` : ''}`}
+              />
+            ) : null}
             <Step
               state={huf.status === 'ACTIVE' ? 'done' : 'todo'}
               title={huf.entityType === 'COMPANY' ? 'NSE activates the company' : 'Karta authorises on NSE (link + OTP)'}
@@ -228,6 +235,11 @@ export function PortfolioPanel({ hufId, view, base = '/onboarding/hufs' }: { huf
                           <Badge tone={planTone(s.status)}>{sentence(s.status)}</Badge>
                         </div>
                         <p className="text-ink-muted">{inr(s.amount)} {s.frequency.toLowerCase()} from {s.startDate ?? '—'} · {s.installments ?? '—'} instalments</p>
+                        {view.sipCancelReasons && !view.block && !/CANCEL|CEASE|CLOSE|EXPIRE/i.test(s.status) ? (
+                          <div className="mt-1.5">
+                            <StopSipForm hufId={hufId} regNo={s.registrationNo} reasons={view.sipCancelReasons} />
+                          </div>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -269,7 +281,17 @@ export function PortfolioPanel({ hufId, view, base = '/onboarding/hufs' }: { huf
 
 // --- Transactions -------------------------------------------------------------------------------------------
 
-const RequestKind: Record<string, string> = { PURCHASE: 'Lumpsum purchase', MANDATE: 'eNACH mandate', SIP: 'Monthly SIP' };
+const RequestKind: Record<string, string> = {
+  PURCHASE: 'Lumpsum purchase', REDEMPTION: 'Redemption', MANDATE: 'eNACH mandate', SIP: 'Monthly SIP', SIP_CANCEL: 'Stop SIP',
+};
+/** What a request was for: an amount, or for a redemption the units or "all units". */
+const requestAmount = (q: HufInvestmentsView['requests'][number]): string => {
+  if (q.kind === 'REDEMPTION') {
+    if (q.detail['all']) return 'all units';
+    if (typeof q.detail['units'] === 'number') return `${q.detail['units']} units`;
+  }
+  return inr(q.amount);
+};
 
 export function OrdersTable({ hufId, orders, linkFunds = true, base = '/onboarding/hufs' }: { hufId: string; orders: NonNullable<HufInvestmentsView['investments']>['orders']; linkFunds?: boolean; base?: string }): React.JSX.Element {
   return (
@@ -310,7 +332,7 @@ export function TransactionsPanel({ hufId, view, base = '/onboarding/hufs' }: { 
                 <li key={q.id} className="space-y-1.5 border-b border-line pb-4 text-[13px] last:border-b-0 last:pb-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-medium text-ink">
-                      {RequestKind[q.kind]} · {inr(q.amount)}
+                      {RequestKind[q.kind]} · {requestAmount(q)}
                       {q.schemeName ? ` · ${q.schemeName}` : ''}
                     </span>
                     <Badge tone={q.ok ? 'success' : 'danger'}>{q.ok ? `NSE ${q.nseId}` : 'Refused by NSE'}</Badge>
@@ -367,6 +389,7 @@ export function FamilyPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             <Row label="Name" value={d.hufName} />
             <Row label="HUF PAN" value={d.pan} />
+            <Row label="KYC" value={d.kycType === 'C' ? `CKYC compliant${d.ckycNumber ? ` · ${d.ckycNumber}` : ''}` : 'KRA compliant'} />
             <Row label="Formed on" value={d.formedOn ? formatDate(d.formedOn) : null} />
             <Row label="Place formed" value={d.placeOfFormation} />
             <Row label="Nature of business" value={d.natureOfBusiness} />
@@ -431,6 +454,7 @@ function CompanyPanel({ huf }: { huf: HufDetail }): React.JSX.Element {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             <Row label="Name" value={d.hufName} />
             <Row label="Company PAN" value={d.pan} />
+            <Row label="KYC" value={d.kycType === 'C' ? `CKYC compliant${d.ckycNumber ? ` · ${d.ckycNumber}` : ''}` : 'KRA compliant'} />
             <Row label="CIN" value={d.cin || null} />
             <Row label="Incorporated on" value={d.formedOn ? formatDate(d.formedOn) : null} />
             <Row label="Place of incorporation" value={d.placeOfFormation} />

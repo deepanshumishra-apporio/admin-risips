@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/layout/theme-switcher';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { cn } from '@/utils/cn';
 
-/** The top of the shell. Its left cell is the head of the navy sidebar — the
+/** The top of the shell. Its left cell is the head of the sidebar — the
  *  logo — and tracks the sidebar's width, so the two read as one column; the
  *  rest is the breadcrumb, the theme switch, alerts and the signed-in admin. */
 export function Topbar({ account }: { account: Account }): React.JSX.Element {
@@ -20,12 +20,13 @@ export function Topbar({ account }: { account: Account }): React.JSX.Element {
     <header className="sticky top-0 z-40 flex h-[var(--shell-header)] items-stretch bg-chrome">
       <div
         className={cn(
-          'theme-dark hidden w-[var(--shell-sidebar)] shrink-0 items-center border-r border-line bg-navy transition-[width] duration-200 lg:flex',
+          'hidden w-[var(--shell-sidebar)] shrink-0 items-center border-r border-line bg-chrome transition-[width] duration-200 lg:flex',
           collapsed ? 'justify-center px-2' : 'px-4',
         )}
       >
-        <Link href="/" aria-label="RiSips admin home" className="flex items-center">
-          {collapsed ? <BrandMark size={28} tone="inverse" /> : <BrandLogo height={26} tone="inverse" />}
+        <Link href="/" aria-label="RiSips admin home" className="flex flex-col items-start justify-center gap-0.5">
+          {collapsed ? <BrandMark size={28} tone="theme" /> : <BrandLogo height={22} tone="theme" />}
+          {collapsed ? null : <span className="pl-0.5 text-[10.5px] font-medium tracking-[0.04em] text-ink-muted">MFD Admin</span>}
         </Link>
       </div>
 

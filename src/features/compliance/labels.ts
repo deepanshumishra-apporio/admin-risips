@@ -98,7 +98,6 @@ export type ComplianceFilters = { view: ComplianceView; kind: ComplianceKind | n
 
 type RawParams = Record<string, string | string[] | undefined>;
 const first = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
-const Uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function parseComplianceFilters(params: RawParams): ComplianceFilters {
   const view = first(params['view']) as ComplianceView;
@@ -108,7 +107,8 @@ export function parseComplianceFilters(params: RawParams): ComplianceFilters {
     view: ComplianceViews.includes(view) ? view : 'open',
     kind: ComplianceKinds.includes(kind) ? kind : null,
     q: first(params['q']).trim().slice(0, 100),
-    cursor: Uuid.test(cursor) ? cursor : null,
+    // The API pages by row offset.
+    cursor: /^\d{1,6}$/.test(cursor) && cursor !== '0' ? cursor : null,
   };
 }
 
@@ -119,19 +119,21 @@ export function toComplianceQuery(filters: ComplianceFilters, limit: number): Co
     ...(filters.q && { search: filters.q }),
     ...(filters.cursor && { cursor: filters.cursor }),
   };
+  // Open, mine, unassigned and high severity are views of the alerts still open; resolved and dismissed are closed.
+  const open: ComplianceListQuery['status'] = ['OPEN', 'ACKNOWLEDGED'];
   switch (filters.view) {
     case 'mine':
-      return { ...base, assignee: 'me' };
+      return { ...base, status: open, assignee: 'me' };
     case 'unassigned':
-      return { ...base, assignee: 'unassigned' };
+      return { ...base, status: open, assignee: 'unassigned' };
     case 'high':
-      return { ...base, severity: ['HIGH'] };
+      return { ...base, status: open, severity: ['HIGH'] };
     case 'resolved':
       return { ...base, status: ['RESOLVED'] };
     case 'dismissed':
       return { ...base, status: ['DISMISSED'] };
     default:
-      return base;
+      return { ...base, status: open };
   }
 }
 

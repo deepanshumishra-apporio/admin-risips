@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, ChevronRight, Landmark, UserRound } from 'lucide-react';
+import { Bell, Bot, Boxes, Building2, ChevronRight, Landmark, Layers, LifeBuoy, Megaphone, Repeat, UserRound, UsersRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,15 @@ import { isReportKey, ReportName } from '@/features/reports/labels';
 const OffNavSections: Record<string, { label: string; icon: LucideIcon }> = {
   profile: { label: 'Your profile', icon: UserRound },
   onboarding: { label: 'Onboarding', icon: Landmark },
+  orders: { label: 'Orders & SIPs', icon: Repeat },
+  // Out of the menu for now, still reachable (the bell opens the Inbox).
+  notifications: { label: 'Inbox', icon: Bell },
+  announcements: { label: 'Announcements', icon: Megaphone },
+  support: { label: 'Tickets', icon: LifeBuoy },
+  'risip-bot': { label: 'Risip Bot', icon: Bot },
+  'model-portfolios': { label: 'Model portfolios', icon: Layers },
+  buckets: { label: 'Buckets', icon: Boxes },
+  agents: { label: 'Agents', icon: UsersRound },
 };
 
 /** Resolves a detail-route id to the name a human would recognise. */
@@ -41,6 +50,14 @@ function resolveLeaf(section: string, segment: string): string {
 
   if (section === 'announcements') {
     return segment === 'new' ? 'New announcement' : 'Announcement';
+  }
+
+  if (section === 'transactions') {
+    return 'Transaction';
+  }
+
+  if (section === 'orders') {
+    return segment === 'sips' ? 'Active SIPs' : segment === 'aum' ? 'Total AUM' : segment;
   }
 
   if (section === 'onboarding') {

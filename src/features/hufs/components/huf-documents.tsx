@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, Circle, Loader2, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, ExternalLink, FileText, Loader2, Upload, XCircle } from 'lucide-react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { uploadHufDocument, type HufActionState } from '@/features/hufs/actions';
 import { RegistrarLabel, RegistrarTone } from '@/features/hufs/labels';
-import type { HufDetail, HufDocumentKind } from '@/types/admin-api.types';
+import type { HufDetail, HufDocumentKind, HufFile } from '@/types/admin-api.types';
 
 /** What each document is and why, worded for a company or a HUF. */
 const documentsFor = (company: boolean): { kind: HufDocumentKind; title: string; why: string }[] => (company ? [
@@ -76,9 +76,41 @@ function settledOnNse(kind: HufDocumentKind, huf: HufDetail): string | null {
   return null;
 }
 
+const sizeText = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+/** Every file uploaded for one document, newest first, each opening in a new tab exactly as it was sent to NSE. */
+function UploadedFiles({ id, files }: { id: string; files: HufFile[] }): React.JSX.Element | null {
+  if (!files.length) return null;
+  return (
+    <ul className="space-y-1.5 pt-1">
+      {files.map((f, i) => (
+        <li key={f.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px]">
+          <FileText className="size-3.5 shrink-0 text-ink-muted" />
+          <a
+            href={`/onboarding/hufs/${id}/documents/${f.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-brand hover:text-brand-deep"
+          >
+            {f.originalName || f.fileName}
+            <ExternalLink className="size-3" />
+          </a>
+          <span className="text-ink-muted">
+            {sizeText(f.bytes)} · {new Date(f.uploadedAt).toLocaleString('en-IN')}
+            {f.uploadedBy ? ` · ${f.uploadedBy}` : ''}
+          </span>
+          <Badge tone={f.ok ? 'success' : 'danger'}>{f.ok ? (i === 0 ? 'Latest, accepted by NSE' : 'Accepted by NSE') : 'Refused by NSE'}</Badge>
+          {!f.ok && f.remark ? <span className="basis-full pl-5.5 text-ink-soft">{f.remark}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocumentKind; title: string; why: string; huf: HufDetail }): React.JSX.Element {
   const [state, action] = useActionState(uploadHufDocument, { error: null } as HufActionState);
   const doc = huf.documents[kind];
+  const files = (huf.files ?? []).filter((f) => f.kind === kind);
   const settled = settledOnNse(kind, huf);
   const done = Boolean(doc?.ok) || settled !== null;
   const Icon = done ? CheckCircle2 : doc ? XCircle : Circle;
@@ -90,12 +122,13 @@ function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocum
           <p className="text-[13.5px] font-medium text-ink">{title}</p>
           <p className="text-[12.5px] text-ink-muted">{why}</p>
           {settled ? <p className="text-[12.5px] font-medium text-success">{settled}</p> : null}
-          {doc ? (
+          {doc && !files.length ? (
             <p className="text-[12.5px] text-ink-soft">
               {doc.ok ? 'Accepted by NSE' : `NSE refused it: ${doc.remark ?? doc.status}`} · {new Date(doc.uploadedAt).toLocaleString('en-IN')} ·{' '}
-              {(doc.bytes / 1024).toFixed(0)} KB
+              {(doc.bytes / 1024).toFixed(0)} KB · uploaded before files were kept, so it can't be opened here
             </p>
           ) : null}
+          <UploadedFiles id={id} files={files} />
           {kind === 'AOF' && huf.nse?.aof ? (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {(['cams', 'kfin'] as const).map((r) => (
@@ -116,7 +149,7 @@ function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocum
             type="file"
             name="file"
             required
-            accept="application/pdf,image/jpeg,image/png,image/tiff"
+            accept={kind === 'CANCELLED_CHEQUE' ? 'application/pdf,image/jpeg,image/png,image/tiff' : 'application/pdf,image/jpeg,image/tiff'}
             className="max-w-full text-[12.5px] text-ink-soft file:mr-3 file:rounded-md file:border file:border-line-strong file:bg-surface file:px-3 file:py-1.5 file:text-[12.5px] file:font-medium file:text-ink"
           />
           <UploadButton />
@@ -130,15 +163,15 @@ function DocumentRow({ id, kind, title, why, huf }: { id: string; kind: HufDocum
 
 /**
  * The signed paper a HUF needs on NSE, uploaded once it is registered there.
- * Files go straight to NSE (PDF, JPG, PNG or TIFF, up to 3 MB); only their
- * name, size and fingerprint are kept.
+ * Files go straight to NSE (PDF, JPG or TIFF; a cheque may also be PNG; up to 3 MB). A sealed copy of each is kept,
+ * so staff can open what was sent.
  */
 export function HufDocuments({ huf }: { huf: HufDetail }): React.JSX.Element {
   return (
     <Card>
       <CardHeader
         title="Documents on NSE"
-        subtitle={huf.canUploadDocuments ? 'Scans of signed paper: PDF, JPG, PNG or TIFF, up to 3 MB. Sent straight to NSE.' : `Can be uploaded once the ${huf.entityType === 'COMPANY' ? 'company' : 'HUF'} is registered on NSE.`}
+        subtitle={huf.canUploadDocuments ? 'Scans of signed paper: PDF, JPG or TIFF (a cheque may also be PNG), up to 3 MB. Sent straight to NSE.' : `Can be uploaded once the ${huf.entityType === 'COMPANY' ? 'company' : 'HUF'} is registered on NSE.`}
       />
       <CardBody>
         <ul className="space-y-4">
