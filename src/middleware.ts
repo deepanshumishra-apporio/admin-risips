@@ -23,8 +23,10 @@ export function middleware(request: NextRequest): NextResponse {
 
 /**
  * HUF onboarding (/onboarding/hufs) and company onboarding (/onboarding/companies) are separate screens served by the
- * same pages: /onboarding/companies/… is rewritten onto /onboarding/hufs/…, and the `x-client-section` header tells the
- * page which section it is in (always set here, so a header sent by the browser never counts).
+ * same pages: /onboarding/companies/… is rewritten onto /onboarding/hufs/… in next.config.ts, and the
+ * `x-client-section` header set here tells the page which section it is in (always set, so a header sent by the
+ * browser never counts). Not rewritten here: a middleware rewrite is proxied by full URL, and behind Caddy that URL
+ * (https://localhost:3000) isn't this server, so every company page failed with "Internal Server Error".
  */
 function onboardingSection(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
@@ -33,10 +35,7 @@ function onboardingSection(request: NextRequest): NextResponse {
   if (!company && !huf) return NextResponse.next();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-client-section', company ? 'companies' : 'hufs');
-  if (!company) return NextResponse.next({ request: { headers: requestHeaders } });
-  const url = request.nextUrl.clone();
-  url.pathname = pathname.replace(/^\/onboarding\/companies/, '/onboarding/hufs');
-  return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
