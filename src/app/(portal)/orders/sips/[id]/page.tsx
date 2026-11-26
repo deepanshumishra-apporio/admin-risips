@@ -7,7 +7,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { NoAccess } from '@/components/ui/no-access';
 import { MetricSection } from '@/features/dashboard/components/metric-section';
 import { SipActions } from '@/features/sips/components/sip-actions';
-import { SipStatusBadge } from '@/features/sips/components/sip-table';
+import { frequencyLabel, SipStatusBadge } from '@/features/sips/components/sip-table';
 import { getSip } from '@/lib/api/sips';
 import { ApiError } from '@/lib/api/errors';
 import { hasPermission } from '@/lib/auth/session';
@@ -20,7 +20,6 @@ type Props = { params: Promise<{ id: string }> };
 
 const Uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const date = (d: string | null | undefined): string => (d ? formatDate(d) : '—');
-const frequencyLabel = (f: string): string => f.charAt(0).toUpperCase() + f.slice(1).replaceAll('_', ' ');
 
 const InstalmentBadge: Record<SipInstalmentStatus, { label: string; tone: BadgeTone }> = {
   UPCOMING: { label: 'Upcoming', tone: 'brand' },
@@ -118,10 +117,18 @@ export default async function SipDetailPage({ params }: Props): Promise<React.JS
                   ['AMC', sip.amc ?? '—'],
                   ['Start date', date(sip.startDate)],
                   ['End date', sip.endDate ? date(sip.endDate) : sip.installmentsTotal ? '—' : 'Until cancelled'],
-                  ['SIP date', sip.sipDay ? `${sip.sipDay} of each ${sip.frequency === 'monthly' ? 'month' : 'period'}` : '—'],
+                  ['SIP date', sip.sipDay ? `${sip.sipDay} of each ${sip.frequency === 'monthly' ? 'month' : 'period'}` : /daily/.test(sip.frequency) ? frequencyLabel(sip.frequency) : '—'],
                   ['Next debit date', date(sip.nextInstallmentDate)],
                   ...(sip.pause ? ([['Paused', `${date(sip.pause.from)} to ${date(sip.pause.to)}`]] as [string, string][]) : []),
                   ...(sip.cancelledAt ? ([['Cancelled on', date(sip.cancelledAt)]] as [string, string][]) : []),
+                  ...(sip.cancellationReason ? ([['Reason', sip.cancellationReason]] as [string, string][]) : []),
+                  // Modify registers a new SIP and cancels the old one: link both ways
+                  ...(sip.replacedById
+                    ? ([['Replaced by', <Link key="replaced-by" href={`/orders/sips/${sip.replacedById}`} className="text-brand hover:underline">The new SIP →</Link>]] as [string, React.ReactNode][])
+                    : []),
+                  ...(sip.replacesId
+                    ? ([['Replaces', <Link key="replaces" href={`/orders/sips/${sip.replacesId}`} className="text-brand hover:underline">The earlier SIP it replaced →</Link>]] as [string, React.ReactNode][])
+                    : []),
                 ]}
               />
             </Card>

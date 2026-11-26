@@ -1,16 +1,25 @@
 import type { SipQuery } from '@/lib/api/sips';
 import type { SipFrequency, SipStatus } from '@/types/admin-api.types';
 
+// No status sent = running SIPs (the API's default). "All" asks for every status, stopped ones included.
 export const SipStatusOptions: { value: string; label: string; statuses: SipStatus[] }[] = [
-  { value: '', label: 'All', statuses: [] },
+  { value: '', label: 'Running', statuses: [] },
   { value: 'ACTIVE', label: 'Active', statuses: ['ACTIVE'] },
   { value: 'PAUSED', label: 'Paused', statuses: ['PAUSED'] },
   { value: 'BOUNCED', label: 'Bounced', statuses: ['BOUNCED'] },
+  { value: 'AWAITING_PAYMENT', label: 'Awaiting payment', statuses: ['AWAITING_PAYMENT'] },
+  { value: 'CANCELLED', label: 'Cancelled', statuses: ['CANCELLED'] },
+  { value: 'MODIFIED', label: 'Modified', statuses: ['MODIFIED'] },
+  { value: 'COMPLETED', label: 'Completed', statuses: ['COMPLETED'] },
+  { value: 'FAILED', label: 'Failed', statuses: ['FAILED'] },
+  { value: 'ALL', label: 'All', statuses: ['ACTIVE', 'PAUSED', 'BOUNCED', 'AWAITING_PAYMENT', 'CANCELLED', 'MODIFIED', 'COMPLETED', 'FAILED'] },
 ];
 
 export const SipFrequencyOptions: { value: '' | SipFrequency; label: string }[] = [
   { value: '', label: 'All' },
   { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: 'Daily (working days)' },
+  { value: 'calendar_day_daily', label: 'Daily (every day)' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'quarterly', label: 'Quarterly' },
 ];

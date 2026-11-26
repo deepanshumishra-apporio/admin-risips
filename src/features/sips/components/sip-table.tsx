@@ -10,11 +10,14 @@ export const SipStatusBadge: Record<SipStatus, { label: string; tone: BadgeTone 
   BOUNCED: { label: 'Bounced', tone: 'danger' },
   AWAITING_PAYMENT: { label: 'Awaiting payment', tone: 'brand' },
   CANCELLED: { label: 'Cancelled', tone: 'neutral' },
+  MODIFIED: { label: 'Modified', tone: 'brand' },
   COMPLETED: { label: 'Completed', tone: 'neutral' },
   FAILED: { label: 'Failed', tone: 'danger' },
 };
 
-const frequencyLabel = (f: string): string => f.charAt(0).toUpperCase() + f.slice(1).replaceAll('_', ' ');
+const FrequencyLabels: Record<string, string> = { daily: 'Daily (working days)', calendar_day_daily: 'Daily (every day)' };
+/** "Monthly", "Daily (working days)", "Daily (every day)", ... */
+export const frequencyLabel = (f: string): string => FrequencyLabels[f] ?? f.charAt(0).toUpperCase() + f.slice(1).replaceAll('_', ' ');
 const shortId = (ref: string): string => (ref.length > 14 ? `${ref.slice(0, 12)}…` : ref);
 const date = (d: string | null): string => (d ? formatDate(d) : '—');
 

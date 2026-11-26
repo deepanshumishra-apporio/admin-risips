@@ -10,6 +10,7 @@ import type { InvestorItemType, Plan, PlanKind } from '@/types/admin-api.types';
 
 const PlanItemType: Record<PlanKind, InvestorItemType> = { SIP: 'sip', SWP: 'swp', STP: 'stp' };
 import { formatDate, formatInrString, humanize } from '@/utils/format';
+import { frequencyLabel } from '@/features/sips/components/sip-table';
 
 const ordinal = (day: number): string => {
   const suffix = day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th';
@@ -19,7 +20,7 @@ const ordinal = (day: number): string => {
 function Schedule({ plan }: { plan: Plan }): React.JSX.Element {
   return (
     <>
-      {humanize(plan.frequency)}
+      {frequencyLabel(plan.frequency)}
       {plan.installmentDay ? <span className="text-ink-muted"> · {ordinal(plan.installmentDay)}</span> : null}
     </>
   );
@@ -98,7 +99,13 @@ function PlanTable({ kind, plans }: { kind: PlanKind; plans: Plan[] }): React.JS
                 )}
               </Td>
               <Td>
-                <Badge tone={stateTone(plan.state)}>{humanize(plan.state)}</Badge>
+                {plan.modified ? <Badge tone="brand">Modified</Badge> : <Badge tone={stateTone(plan.state)}>{humanize(plan.state)}</Badge>}
+                {plan.modified ? (
+                  <span className="mt-1 block text-[11.5px] text-ink-muted">Replaced by a new SIP</span>
+                ) : plan.cancellationReason ? (
+                  <span className="mt-1 block text-[11.5px] text-ink-muted">{plan.cancellationReason}</span>
+                ) : null}
+                {plan.replacesId ? <span className="mt-1 block text-[11.5px] text-ink-muted">Replaces an earlier SIP</span> : null}
                 {plan.pause ? (
                   <span className="mt-1 flex items-center gap-1 text-[11.5px] text-warn">
                     <PauseCircle className="size-3.5" />

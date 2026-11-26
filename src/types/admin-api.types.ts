@@ -415,6 +415,13 @@ export type Plan = {
   createdAt: string;
   cancelledAt: string | null;
   reason: string | null;
+  /** Cancelled because it was changed (Modify): the app registered a new SIP in its place. */
+  modified?: boolean;
+  /** Ids of the SIP that replaced this one, and of the SIP this one replaced (both null when not modified). */
+  replacedById?: string | null;
+  replacesId?: string | null;
+  /** Why it was cancelled, in words ("Modified (replaced by a new SIP)", "Amount not available", ...). */
+  cancellationReason?: string | null;
 };
 
 export type UpcomingInstallment = {
@@ -1346,8 +1353,10 @@ export type FundReturnsReport = {
 };
 
 /** Where a SIP stands. Bounced: live, but its latest instalment failed. Running = the first four. */
-export type SipStatus = 'ACTIVE' | 'PAUSED' | 'BOUNCED' | 'AWAITING_PAYMENT' | 'CANCELLED' | 'COMPLETED' | 'FAILED';
-export type SipFrequency = 'daily' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly';
+/** MODIFIED: cancelled because it was changed; a new SIP replaced it. */
+export type SipStatus = 'ACTIVE' | 'PAUSED' | 'BOUNCED' | 'AWAITING_PAYMENT' | 'CANCELLED' | 'MODIFIED' | 'COMPLETED' | 'FAILED';
+/** daily = every working day, calendar_day_daily = every day. */
+export type SipFrequency = 'daily' | 'calendar_day_daily' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly';
 
 export type SipSummary = {
   activeSips: number;
@@ -1378,6 +1387,11 @@ export type SipListItem = {
   /** Null for a SIP that runs until cancelled. */
   installmentsTotal: number | null;
   status: SipStatus;
+  /** The SIP this one replaced, and the one that replaced it (Modify). */
+  replacesId?: string | null;
+  replacedById?: string | null;
+  /** Why a stopped SIP was cancelled, in words. */
+  cancellationReason?: string | null;
   createdAt: string | null;
 };
 
