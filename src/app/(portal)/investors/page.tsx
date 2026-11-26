@@ -33,6 +33,11 @@ function viewNote(filters: InvestorFilters): string | null {
   if (filters.attention === 'KYC') return 'stuck in KYC: check failed, expired or not moving';
   if (filters.attention === 'SETUP') return 'KYC done, account not ready to invest';
   if (filters.stalled) return 'KYC has not moved for a while';
+  if (filters.active === true) return 'hold units or have a running SIP';
+  if (filters.active === false) return 'signed up, but hold no units and have no running SIP';
+  if (filters.elss) return 'hold an ELSS (tax saver) fund';
+  if (filters.joined === 'month') return 'signed up this month';
+  if (filters.joined === '30d') return 'signed up in the last 30 days';
   if (filters.sipDue !== null) return `a SIP instalment due in the next ${filters.sipDue} days`;
   const stages = filters.stage;
   if (stages.length === 1 && stages[0] === 'INVESTED') return 'all have invested';

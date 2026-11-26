@@ -125,7 +125,8 @@ export function StaffMemberView({ staff, roles, me }: { staff: StaffDetail; role
 
   const alerts = [
     ...(staff.locked ? [{ tone: 'danger' as const, text: 'Locked out after too many wrong passwords. Resetting the password unlocks them.' }] : []),
-    ...(!staff.mfaEnrolled && !deactivated ? [{ tone: 'warn' as const, text: 'Two-factor sign-in isn’t set up yet. They’ll be asked to at their next sign-in.' }] : []),
+    ...(staff.mfaOffForPerson && !deactivated ? [{ tone: 'warn' as const, text: 'Two-factor sign-in is turned off for this person: they sign in with the password only.' }] : []),
+    ...(staff.mfaRequired && !staff.mfaEnrolled && !deactivated ? [{ tone: 'warn' as const, text: 'Two-factor sign-in isn’t set up yet. They’ll be asked to at their next sign-in.' }] : []),
     ...(staff.mustChangePassword && !deactivated ? [{ tone: 'warn' as const, text: 'Still on a temporary password; they must change it when they sign in.' }] : []),
   ];
 
@@ -163,10 +164,10 @@ export function StaffMemberView({ staff, roles, me }: { staff: StaffDetail; role
             />
             <Fact icon={MonitorSmartphone} label="Active sessions" value={String(staff.activeSessions)} sub={staff.activeSessions ? 'signed in now' : 'signed out'} />
             <Fact
-              icon={staff.mfaEnrolled ? ShieldCheck : ShieldAlert}
+              icon={staff.mfaRequired && staff.mfaEnrolled ? ShieldCheck : ShieldAlert}
               label="Two-factor"
-              value={staff.mfaEnrolled ? 'On' : 'Not set up'}
-              tone={staff.mfaEnrolled ? 'success' : 'warn'}
+              value={!staff.mfaRequired ? (staff.mfaOffForPerson ? 'Off for them' : 'Off on this server') : staff.mfaEnrolled ? 'On' : 'Not set up'}
+              tone={staff.mfaRequired && staff.mfaEnrolled ? 'success' : 'warn'}
             />
             <Fact
               icon={UserPlus}

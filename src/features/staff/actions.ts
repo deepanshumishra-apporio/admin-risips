@@ -83,6 +83,8 @@ const Commands = {
   reactivate: { path: 'status', body: { status: 'ACTIVE' } },
   deactivate: { path: 'status', body: { status: 'DEACTIVATED' } },
   'reset-mfa': { path: 'reset-mfa', body: undefined },
+  'mfa-on': { path: 'mfa', body: { required: true } },
+  'mfa-off': { path: 'mfa', body: { required: false } },
   'revoke-sessions': { path: 'revoke-sessions', body: undefined },
   'reset-password': { path: 'reset-password', body: undefined },
 } as const;

@@ -31,6 +31,8 @@ export type StaffSessionState = {
   expiresAt: string;
   mfa: MfaState;
   mustChangePassword: boolean;
+  /** Only when the authenticator was just set up: the ten one-time recovery codes, shown this once. */
+  recoveryCodes?: string[];
 };
 
 export type MfaSetup = {
@@ -46,6 +48,8 @@ export type StaffMe = {
   permissions: Permission[];
   mustChangePassword: boolean;
   lastLoginAt: string | null;
+  /** Two-factor sign-in: asked for on this server, set up, and recovery codes still unused. */
+  mfa: { serverOn: boolean; required: boolean; enrolled: boolean; recoveryCodesLeft: number };
 };
 
 // --- investors ------------------------------------------------------------------
@@ -213,12 +217,21 @@ export type NudgeResult = {
   skippedRecent: number;
 };
 
+export const InvestorJoinedOptions = ['month', '30d'] as const;
+export type InvestorJoined = (typeof InvestorJoinedOptions)[number];
+
 export type InvestorListQuery = {
   search?: string;
   stage?: JourneyStage[];
   kycStatus?: KycStatus[];
   accountType?: AccountType[];
   kycStalled?: boolean;
+  /** True: holds units or has a running SIP (the dashboard's "Active investors"); false: everyone else. */
+  active?: boolean;
+  /** Holds an ELSS (tax saver) fund at the last valuation. */
+  elss?: boolean;
+  /** Signed up this calendar month, or in the last 30 days (the dashboard's "New investors"). */
+  joined?: InvestorJoined;
   sipDueDays?: number;
   attention?: InvestorAttention;
   cursor?: string;
@@ -339,6 +352,10 @@ export type StaffListItem = {
   status: StaffStatus;
   roles: { key: string; name: string }[];
   mfaEnrolled: boolean;
+  /** Sign-in asks this person for a second factor (on for the server, and not turned off for them). */
+  mfaRequired: boolean;
+  /** An administrator turned two-factor off for this person. */
+  mfaOffForPerson: boolean;
   locked: boolean;
   mustChangePassword: boolean;
   lastLoginAt: string | null;
@@ -1377,6 +1394,8 @@ export type SipDetail = SipListItem & {
   instalments: { number: number; date: string | null; amount: string | null; units: string | null; status: SipInstalmentStatus; reason: string | null }[];
   mandate: { id: string; status: string | null; type: string | null; maxAmount: string | null; validFrom: string | null; validUntil: string | null } | null;
   bank: { bankName: string | null; accountMasked: string; ifsc: string } | null;
+  /** The folio's units in this scheme (what a redemption can take); null with no folio or no portfolio answer. */
+  holding: { units: string | null; current: string | null; redeemable: string | null; navDate: string | null } | null;
 };
 
 export type TransactionStep = { key: string; label: string; at: string | null; by: string | null; tone: 'done' | 'failed' | 'pending' };

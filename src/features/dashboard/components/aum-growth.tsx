@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { BarChart } from '@/components/charts/bar-chart';
 import { ChartLegend } from '@/components/charts/legend';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
@@ -12,7 +14,7 @@ import { formatInr } from '@/utils/format';
 export function AumGrowth({ months }: { months: DashboardOverview['aumMonths'] }): React.JSX.Element {
   return (
     <Card className="flex flex-col">
-      <CardHeader title="AUM growth, last 12 months" subtitle="Past months: net invested at month end · this month: market value" />
+      <CardHeader title="AUM growth, last 12 months" subtitle="Past months: net invested at month end · this month: market value" action={<Link href="/orders/aum" className="text-[13px] font-semibold text-brand hover:underline">View AUM</Link>} />
       <CardBody className="space-y-2">
         <ChartLegend
           items={[

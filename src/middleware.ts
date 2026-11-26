@@ -22,11 +22,11 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 /**
- * HUF onboarding (/onboarding/hufs) and company onboarding (/onboarding/companies) are separate screens served by the
- * same pages: /onboarding/companies/… is rewritten onto /onboarding/hufs/… in next.config.ts, and the
- * `x-client-section` header set here tells the page which section it is in (always set, so a header sent by the
- * browser never counts). Not rewritten here: a middleware rewrite is proxied by full URL, and behind Caddy that URL
- * (https://localhost:3000) isn't this server, so every company page failed with "Internal Server Error".
+ * HUF onboarding (/onboarding/hufs) and company onboarding (/onboarding/companies) are separate screens built from the
+ * same pages: each file under /onboarding/companies re-exports its /onboarding/hufs twin, and the `x-client-section`
+ * header set here tells the page which section it is in (always set, so a header sent by the browser never counts).
+ * They are real routes, not rewrites: a middleware rewrite was proxied by full URL and failed behind Caddy, and a
+ * config rewrite made both sections one route, so switching sections showed the other section's list for a few seconds.
  */
 function onboardingSection(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;

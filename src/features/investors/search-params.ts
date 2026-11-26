@@ -1,10 +1,12 @@
 import {
   AccountTypes,
   InvestorAttentions,
+  InvestorJoinedOptions,
   JourneyStages,
   KycStatuses,
   type AccountType,
   type InvestorAttention,
+  type InvestorJoined,
   type InvestorListQuery,
   type JourneyStage,
   type KycStatus,
@@ -18,6 +20,12 @@ export type InvestorFilters = {
   /** Individuals, HUFs, or both when empty. */
   type: AccountType[];
   stalled: boolean;
+  /** True: only investors who hold units or have a running SIP; false: only the others; null: everyone. */
+  active: boolean | null;
+  /** Only investors holding an ELSS (tax saver) fund. */
+  elss: boolean;
+  /** Only investors who signed up this month or in the last 30 days. */
+  joined: InvestorJoined | null;
   /** Only investors with an active SIP due within this many days. */
   sipDue: number | null;
   /** Only the investors a stage card counts as needing attention. */
@@ -33,7 +41,7 @@ export const PageStep = 25;
 export const MaxShow = 100;
 
 export const BlankFilters: InvestorFilters = {
-  q: '', stage: [], kyc: [], type: [], stalled: false, sipDue: null, attention: null, show: PageStep, cursor: null,
+  q: '', stage: [], kyc: [], type: [], stalled: false, active: null, elss: false, joined: null, sipDue: null, attention: null, show: PageStep, cursor: null,
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -66,6 +74,9 @@ export function parseInvestorFilters(params: RawParams): InvestorFilters {
     kyc: listOf(params['kyc'], KycStatuses),
     type: listOf(params['type'], AccountTypes),
     stalled: first(params['stalled']) === 'true',
+    active: first(params['active']) === 'true' ? true : first(params['active']) === 'false' ? false : null,
+    elss: first(params['elss']) === 'true',
+    joined: (InvestorJoinedOptions as readonly string[]).includes(first(params['joined'])) ? (first(params['joined']) as InvestorJoined) : null,
     sipDue: first(params['sipDue']) !== '' && Number.isInteger(sipDue) && sipDue >= 0 && sipDue <= 60 ? sipDue : null,
     attention: (InvestorAttentions as readonly string[]).includes(attention) ? (attention as InvestorAttention) : null,
     show: Number.isInteger(show) && show >= PageStep && show <= MaxShow ? show : PageStep,
@@ -81,6 +92,9 @@ export function toFilterQuery(filters: InvestorFilters): Omit<InvestorListQuery,
     ...(filters.kyc.length && { kycStatus: filters.kyc }),
     ...(filters.type.length && { accountType: filters.type }),
     ...(filters.stalled && { kycStalled: true }),
+    ...(filters.active !== null && { active: filters.active }),
+    ...(filters.elss && { elss: true }),
+    ...(filters.joined && { joined: filters.joined }),
     ...(filters.sipDue !== null && { sipDueDays: filters.sipDue }),
     ...(filters.attention && { attention: filters.attention }),
   };
@@ -97,6 +111,9 @@ function toParams(filters: InvestorFilters): URLSearchParams {
   if (filters.kyc.length) params.set('kyc', filters.kyc.join(','));
   if (filters.type.length) params.set('type', filters.type.join(','));
   if (filters.stalled) params.set('stalled', 'true');
+  if (filters.active !== null) params.set('active', String(filters.active));
+  if (filters.elss) params.set('elss', 'true');
+  if (filters.joined) params.set('joined', filters.joined);
   if (filters.sipDue !== null) params.set('sipDue', String(filters.sipDue));
   if (filters.attention) params.set('attention', filters.attention);
   if (filters.show !== PageStep) params.set('show', String(filters.show));

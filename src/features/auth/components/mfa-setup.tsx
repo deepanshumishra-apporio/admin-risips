@@ -1,7 +1,7 @@
 'use client';
 
 import { QrCode } from 'lucide-react';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 
 import { startMfaSetup, type MfaSetupState } from '@/features/auth/actions';
 import { FormError, SubmitButton } from '@/features/auth/components/form-parts';
@@ -15,6 +15,7 @@ const Initial: MfaSetupState = { error: null, qrSvg: null, secret: null };
  */
 export function MfaSetup({ next }: { next: string }): React.JSX.Element {
   const [setup, start] = useActionState(startMfaSetup, Initial);
+  const [done, setDone] = useState(false);
 
   if (!setup.qrSvg || !setup.secret) {
     return (
@@ -34,27 +35,33 @@ export function MfaSetup({ next }: { next: string }): React.JSX.Element {
 
   return (
     <div className="space-y-5">
-      <ol className="space-y-1 text-[13px] text-ink-soft">
-        <li>1. Scan this code with your authenticator app.</li>
-        <li>2. Enter the 6-digit code it shows.</li>
-      </ol>
+      {/* Once the code is accepted only the recovery codes stay on screen (the QR code is no longer needed). */}
+      {done ? null : (
+        <>
+          <ol className="space-y-1 text-[13px] text-ink-soft">
+            <li>1. Scan this code with your authenticator app.</li>
+            <li>2. Enter the 6-digit code it shows.</li>
+            <li>3. Save the recovery codes we show you next.</li>
+          </ol>
 
-      <div
-        className="mx-auto w-fit rounded-lg border border-line bg-white p-2"
-        // Generated on our server from the API's otpauth URI; contains no user input.
-        dangerouslySetInnerHTML={{ __html: setup.qrSvg }}
-        aria-label="Authenticator QR code"
-        role="img"
-      />
+          <div
+            className="mx-auto w-fit rounded-lg border border-line bg-white p-2"
+            // Generated on our server from the API's otpauth URI; contains no user input.
+            dangerouslySetInnerHTML={{ __html: setup.qrSvg }}
+            aria-label="Authenticator QR code"
+            role="img"
+          />
 
-      <details className="rounded-md border border-line px-3 py-2 text-[12.5px] text-ink-muted">
-        <summary className="cursor-pointer font-medium text-ink-soft">Can&apos;t scan? Enter the key instead</summary>
-        <code className="tabular mt-2 block break-all text-[13px] tracking-wider text-ink">
-          {setup.secret.match(/.{1,4}/g)?.join(' ')}
-        </code>
-      </details>
+          <details className="rounded-md border border-line px-3 py-2 text-[12.5px] text-ink-muted">
+            <summary className="cursor-pointer font-medium text-ink-soft">Can&apos;t scan? Enter the key instead</summary>
+            <code className="tabular mt-2 block break-all text-[13px] tracking-wider text-ink">
+              {setup.secret.match(/.{1,4}/g)?.join(' ')}
+            </code>
+          </details>
+        </>
+      )}
 
-      <MfaCodeForm next={next} label="Confirm and continue" />
+      <MfaCodeForm next={next} label="Confirm and continue" onRecoveryCodes={() => setDone(true)} />
     </div>
   );
 }

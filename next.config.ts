@@ -28,11 +28,6 @@ const nextConfig: NextConfig = {
     // Sub-admins became Staff, backed by the API.
     return [{ source: '/sub-admins', destination: '/staff', permanent: true }];
   },
-  async rewrites() {
-    // Company onboarding is served by the HUF onboarding pages (middleware.ts sets which section). A rewrite here stays
-    // inside this server; one returned from middleware is proxied by full URL, which failed behind Caddy.
-    return { beforeFiles: [{ source: '/onboarding/companies/:path*', destination: '/onboarding/hufs/:path*' }] };
-  },
   async headers() {
     return [{ source: '/:path*', headers: SecurityHeaders }];
   },

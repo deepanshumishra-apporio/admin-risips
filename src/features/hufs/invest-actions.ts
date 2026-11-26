@@ -20,15 +20,18 @@ type View = { requests: { link: string | null; linkError: string | null; nseId: 
 async function send(form: FormData, path: string, body: unknown, done: string): Promise<InvestState> {
   const id = text(form, 'id');
   if (!Uuid.test(id)) return { error: 'That client could not be found.' };
+  // The form's one-time key (RequestKey), so the backend refuses the same order twice.
+  const requestKey = text(form, 'requestKey');
+  const payload = body !== undefined && requestKey ? { ...(body as Record<string, unknown>), requestKey } : body;
   let view: View;
   try {
-    view = await authedRequest<View>(`/hufs/${id}/${path}`, { method: 'POST', ...(body !== undefined && { body }) });
+    view = await authedRequest<View>(`/hufs/${id}/${path}`, { method: 'POST', ...(payload !== undefined && { body: payload }) });
   } catch (error) {
     if (error instanceof ApiError) return { error: error.message };
     throw error;
   }
   // The HUF's page and everything under it: portfolio, funds, invest steps, mandate.
-  revalidatePath(`/onboarding/hufs/${id}`, 'layout');
+  revalidatePath('/onboarding', 'layout'); // HUF and company pages alike
   const latest = view.requests[0];
   return { error: null, done: latest?.nseId ? `${done} NSE reference ${latest.nseId}.` : done, link: latest?.link ?? null };
 }

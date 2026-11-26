@@ -118,7 +118,7 @@ export async function saveHuf(_previous: HufFormState, form: FormData): Promise<
     return { ...failure(error), values, attempt: Date.now() };
   }
   // HUFs and companies have their own screens (both served by the /onboarding/hufs pages).
-  revalidatePath('/onboarding/hufs', 'layout');
+  revalidatePath('/onboarding', 'layout'); // HUF and company pages alike
   redirect(`${sectionFor(saved.entityType).base}/${saved.id}`);
 }
 
@@ -132,7 +132,7 @@ async function act(form: FormData, path: string, done: string, body?: unknown): 
     if (error instanceof ApiError) return { error: error.message };
     throw error;
   }
-  revalidatePath('/onboarding/hufs', 'layout');
+  revalidatePath('/onboarding', 'layout'); // HUF and company pages alike
   return { error: null, done };
 }
 
@@ -150,7 +150,7 @@ export async function createConsentLink(_previous: HufActionState, form: FormDat
   const incoming = await headers();
   const host = incoming.get('x-forwarded-host') ?? incoming.get('host') ?? 'localhost:3100';
   const proto = incoming.get('x-forwarded-proto') ?? (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https');
-  revalidatePath(`/onboarding/hufs/${id}`);
+  revalidatePath('/onboarding', 'layout'); // HUF and company pages alike
   return { error: null, done: 'Link created. Send it to the karta.', consentUrl: `${proto}://${host}/huf-consent/${token}` };
 }
 
@@ -180,7 +180,7 @@ export async function cancelHuf(_previous: HufActionState, form: FormData): Prom
 export async function syncHufsFromNse(_previous: HufActionState): Promise<HufActionState> {
   try {
     const { found, imported } = await authedRequest<{ found: number; imported: string[] }>('/hufs/sync', { method: 'POST' });
-    revalidatePath('/onboarding/hufs');
+    revalidatePath('/onboarding', 'layout'); // HUF and company pages alike
     return {
       error: null,
       done: imported.length ? `Added ${imported.join(', ')} from NSE (${found} HUFs and companies on NSE).` : `All ${found} HUFs and companies on NSE are already here.`,

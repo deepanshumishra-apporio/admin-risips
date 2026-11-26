@@ -7,7 +7,7 @@ import { useFormStatus } from 'react-dom';
 
 import { Field, SelectInput, TextInput } from '@/components/ui/field';
 import { cutoffText, fundName } from '@/features/hufs/components/fund-explorer';
-import { CopyLink } from '@/features/hufs/components/invest-forms';
+import { CopyLink, RequestKey } from '@/features/hufs/components/invest-forms';
 import { placePurchase, registerSip, type InvestState } from '@/features/hufs/invest-actions';
 import type { HufInvestmentsView, HufScheme } from '@/types/admin-api.types';
 import { cn } from '@/utils/cn';
@@ -225,6 +225,7 @@ export function InvestWizard(props: WizardProps): React.JSX.Element {
         <InvestSteps current={3} />
         <form action={kind === 'lumpsum' ? purchase : sip} className="max-w-2xl space-y-4">
           <input type="hidden" name="id" value={hufId} />
+          <RequestKey state={kind === 'lumpsum' ? purchaseState : sipState} />
           <input type="hidden" name="schemeCode" value={scheme.schemeCode} />
           <input type="hidden" name="amount" value={String(n)} />
           {kind === 'lumpsum' ? (

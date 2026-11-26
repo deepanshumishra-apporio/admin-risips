@@ -42,7 +42,7 @@ export default async function MfaPage({ searchParams }: MfaPageProps): Promise<R
           : 'Enter the code from your authenticator app.'
       }
     >
-      {enrolling ? <MfaSetup next={next} /> : <MfaCodeForm next={next} />}
+      {enrolling ? <MfaSetup next={next} /> : <MfaCodeForm next={next} allowRecovery />}
 
       <form action={signOut} className="mt-5">
         <button type="submit" className="text-[13px] font-medium text-ink-muted hover:text-ink">

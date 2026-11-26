@@ -32,12 +32,13 @@ function buildUrl(path: string, query: RequestOptions['query']): string {
 async function forwardedHeaders(): Promise<Record<string, string>> {
   const incoming = await headers();
   const forwarded: Record<string, string> = {};
-  // Only the address our own edge vouches for. Copying the incoming
-  // X-Forwarded-For verbatim passed on whatever the visitor typed, letting them
-  // pick a new IP per request to dodge the API's sign-in limits and forge the
-  // IPs in login history. `x-real-ip` is set by the hosting edge (Vercel); the
-  // fallback is the right-most hop, the one the nearest proxy appended.
-  const clientIp = incoming.get('x-real-ip')?.trim() || incoming.get('x-forwarded-for')?.split(',').at(-1)?.trim();
+  // Only the address our own edge vouches for: the right-most X-Forwarded-For
+  // hop, which the nearest proxy (Caddy on AWS, Vercel's edge) writes from the
+  // connection itself. Copying the incoming header verbatim, or trusting
+  // X-Real-IP (Caddy passes a visitor's own X-Real-IP straight through), let a
+  // visitor pick any IP: dodging the API's sign-in limits, forging login history,
+  // and faking the IP recorded as a karta's consent evidence.
+  const clientIp = incoming.get('x-forwarded-for')?.split(',').at(-1)?.trim();
   if (clientIp) forwarded['x-forwarded-for'] = clientIp;
   // Through the API's Caddy, X-Forwarded-For arrives as this server's own
   // address. The same IP in our own header, with the key the API shares,

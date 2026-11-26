@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Copy, Loader2 } from 'lucide-react';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { Field, SelectInput, TextInput } from '@/components/ui/field';
@@ -11,6 +11,20 @@ import {
 import { cn } from '@/utils/cn';
 
 const Initial: InvestState = { error: null };
+
+const newKey = (): string => crypto.randomUUID().replace(/-/g, '');
+
+/**
+ * The form's one-time key. The admin backend refuses a second request with the same key, so a double click or a
+ * resubmit after NSE timed out can't place a second real order. A new key comes only after a success, for the next one.
+ */
+export function RequestKey({ state }: { state: InvestState }): React.JSX.Element {
+  const [key, setKey] = useState(newKey);
+  useEffect(() => {
+    if (state.done) setKey(newKey());
+  }, [state]);
+  return <input type="hidden" name="requestKey" value={key} />;
+}
 
 function Submit({ children, primary = false }: { children: React.ReactNode; primary?: boolean }): React.JSX.Element {
   const { pending } = useFormStatus();
@@ -68,6 +82,7 @@ export function MandateForm({ hufId }: { hufId: string }): React.JSX.Element {
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={hufId} />
+      <RequestKey state={state} />
       <Field label="Mandate limit (₹)" hint="The most one debit can take, across all SIPs on it. ₹1,00,000 is usual. Runs 40 years, NSE's maximum." required>
         <TextInput name="amount" inputMode="numeric" defaultValue="100000" required />
       </Field>
@@ -86,6 +101,7 @@ export function RedeemForm({ hufId, schemeCode, folio, units }: { hufId: string;
       <summary className="cursor-pointer text-[13px] font-semibold text-ink">Redeem from folio {folio}</summary>
       <form action={action} className="mt-3 space-y-3">
         <input type="hidden" name="id" value={hufId} />
+        <RequestKey state={state} />
         <input type="hidden" name="schemeCode" value={schemeCode} />
         <input type="hidden" name="folio" value={folio} />
         <div className="grid gap-3 sm:grid-cols-2">
@@ -122,6 +138,7 @@ export function StopSipForm({ hufId, regNo, reasons }: { hufId: string; regNo: s
       <summary className="cursor-pointer text-[12.5px] font-semibold text-danger">Stop this SIP</summary>
       <form action={action} className="mt-2 space-y-2.5">
         <input type="hidden" name="id" value={hufId} />
+        <RequestKey state={state} />
         <input type="hidden" name="regNo" value={regNo} />
         <Field label="Reason (NSE's list)" required>
           <SelectInput name="reason" value={reason} onChange={(e) => setReason(e.target.value)} required>

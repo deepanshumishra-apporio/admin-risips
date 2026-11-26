@@ -51,16 +51,16 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         <MetricSection
           title="Business metrics"
           metrics={[
-            { label: 'Total AUM', value: formatInrString(o.business.aum), hint: 'Current market value of every investor’s holdings, from the last valuation.' },
-            { label: 'Active SIPs', value: formatCount(o.business.activeSips), caption: `${formatInrString(summary.investments.activeSipMonthlyAmount)} a month` },
-            { label: 'Active investors', value: formatCount(o.business.activeInvestors), hint: 'Holds units or has a running SIP.' },
+            { label: 'Total AUM', value: formatInrString(o.business.aum), hint: 'Current market value of every investor’s holdings, from the last valuation.', href: '/orders/aum' },
+            { label: 'Active SIPs', value: formatCount(o.business.activeSips), caption: `${formatInrString(summary.investments.activeSipMonthlyAmount)} a month`, href: '/orders/sips' },
+            { label: 'Active investors', value: formatCount(o.business.activeInvestors), hint: 'Holds units or has a running SIP.', href: '/investors?active=true' },
           ]}
         />
 
         <MetricSection
           title="Investor metrics"
           metrics={[
-            { label: 'New investors', value: formatCount(o.investors.newThisMonth), caption: `This month · ${formatCount(o.investors.newLast30Days)} in the last 30 days` },
+            { label: 'New investors', value: formatCount(o.investors.newThisMonth), caption: `This month · ${formatCount(o.investors.newLast30Days)} in the last 30 days`, href: '/investors?joined=month' },
             { label: 'Pending KYC', value: formatCount(o.investors.pendingKyc), hint: 'Signed up, KYC not started or not finished.', href: '/investors?kyc=NOT_STARTED,IN_PROGRESS' },
             {
               label: 'KYC rejections',

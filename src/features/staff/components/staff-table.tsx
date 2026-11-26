@@ -46,7 +46,11 @@ export function StaffTable({ staff, currentStaffId }: { staff: StaffListItem[]; 
             ) : null}
           </Td>
           <Td>
-            {member.mfaEnrolled ? (
+            {member.mfaOffForPerson ? (
+              <span className="flex items-center gap-1.5 text-[13px] text-ink-muted">
+                <ShieldAlert className="size-4" /> Turned off
+              </span>
+            ) : member.mfaEnrolled ? (
               <span className="flex items-center gap-1.5 text-[13px] text-success">
                 <ShieldCheck className="size-4" /> Set up
               </span>

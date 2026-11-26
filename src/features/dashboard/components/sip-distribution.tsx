@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { GroupedBarChart } from '@/components/charts/grouped-bar-chart';
 import { ChartLegend } from '@/components/charts/legend';
 import { LineChart } from '@/components/charts/line-chart';
@@ -17,7 +19,7 @@ export function SipDistribution({ months }: { months: DashboardOverview['sipMont
   const labels = months.map((m) => monthLabel(m.month));
   return (
     <Card className="flex flex-col">
-      <CardHeader title="Month-wise SIP distribution" subtitle="Last 6 months" />
+      <CardHeader title="Month-wise SIP distribution" subtitle="Last 6 months" action={<Link href="/orders/sips" className="text-[13px] font-semibold text-brand hover:underline">View SIPs</Link>} />
       <CardBody className="space-y-5">
         <div className="space-y-2">
           <ChartLegend items={[{ label: 'Started', color: Started }, { label: 'Running', color: Running }]} />

@@ -62,6 +62,9 @@ export function InvestorFiltersBar({ filters, overview }: { filters: InvestorFil
       <form method="get" action="/investors" className="flex flex-wrap items-stretch gap-3">
         {/* The view's other filters ride along, so a search narrows the view rather than resetting it. */}
         {filters.stalled ? <input type="hidden" name="stalled" value="true" /> : null}
+        {filters.active !== null ? <input type="hidden" name="active" value={String(filters.active)} /> : null}
+        {filters.elss ? <input type="hidden" name="elss" value="true" /> : null}
+        {filters.joined ? <input type="hidden" name="joined" value={filters.joined} /> : null}
         {filters.sipDue !== null ? <input type="hidden" name="sipDue" value={filters.sipDue} /> : null}
         {filters.attention ? <input type="hidden" name="attention" value={filters.attention} /> : null}
         {filters.stage.length > 1 ? <input type="hidden" name="stage" value={filters.stage.join(',')} /> : null}

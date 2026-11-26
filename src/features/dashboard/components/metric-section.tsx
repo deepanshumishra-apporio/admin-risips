@@ -1,3 +1,4 @@
+import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { InfoHint } from '@/features/dashboard/components/info-hint';
@@ -33,6 +34,7 @@ function MetricCard({ metric }: { metric: Metric }): React.JSX.Element {
       <p className="flex items-center gap-1.5 text-[13px] text-ink-soft">
         {metric.label}
         {metric.hint ? <InfoHint text={metric.hint} /> : null}
+        {metric.href ? <ArrowUpRight aria-hidden className="ml-auto size-4 text-ink-muted transition-colors group-hover:text-brand" /> : null}
       </p>
       <p className="tabular mt-2 text-[26px] leading-none font-semibold tracking-[-0.02em] text-ink">{metric.value}</p>
       {metric.caption ? <p className="mt-2 text-[12px] text-ink-muted">{metric.caption}</p> : null}
@@ -40,7 +42,7 @@ function MetricCard({ metric }: { metric: Metric }): React.JSX.Element {
   );
   const box = 'block rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3.5';
   return metric.href ? (
-    <Link href={metric.href} className={cn(box, 'transition-colors hover:border-line-strong hover:bg-surface-sunken')}>
+    <Link href={metric.href} className={cn(box, 'group transition-colors hover:border-brand/40 hover:bg-surface-sunken')}>
       {body}
     </Link>
   ) : (

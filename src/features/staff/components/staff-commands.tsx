@@ -1,6 +1,6 @@
 'use client';
 
-import { Ban, KeyRound, LogOut, PlayCircle, Smartphone, UserX } from 'lucide-react';
+import { Ban, KeyRound, LogOut, PlayCircle, ShieldCheck, ShieldOff, Smartphone, UserX } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -18,6 +18,9 @@ type Command = { command: StaffCommand; label: string; action: string; detail: s
 function securityCommands(staff: StaffDetail): Command[] {
   return [
     { command: 'reset-password', label: 'Reset password', action: 'Reset', detail: 'Issues a temporary one', icon: KeyRound },
+    staff.mfaOffForPerson
+      ? { command: 'mfa-on', label: 'Turn on two-factor', action: 'Turn on', detail: 'Signs them out; the next sign-in asks for a code', icon: ShieldCheck }
+      : { command: 'mfa-off', label: 'Turn off two-factor', action: 'Turn off', detail: 'They sign in with the password only', icon: ShieldOff, danger: true },
     { command: 'reset-mfa', label: 'Reset two-factor', action: 'Reset', detail: 'For a lost phone', icon: Smartphone },
     {
       command: 'revoke-sessions',

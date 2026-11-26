@@ -335,7 +335,9 @@ export function TransactionsPanel({ hufId, view, base = '/onboarding/hufs' }: { 
                       {RequestKind[q.kind]} · {requestAmount(q)}
                       {q.schemeName ? ` · ${q.schemeName}` : ''}
                     </span>
-                    <Badge tone={q.ok ? 'success' : 'danger'}>{q.ok ? `NSE ${q.nseId}` : 'Refused by NSE'}</Badge>
+                    <Badge tone={q.ok ? 'success' : q.status === 'SENDING' || q.status === 'NO_ANSWER' ? 'warn' : 'danger'}>
+                      {q.ok ? `NSE ${q.nseId}` : q.status === 'SENDING' ? 'Sending to NSE' : q.status === 'NO_ANSWER' ? 'No answer from NSE' : 'Refused by NSE'}
+                    </Badge>
                   </div>
                   <p className="text-ink-muted">
                     {formatDateTime(q.at)}
@@ -347,7 +349,12 @@ export function TransactionsPanel({ hufId, view, base = '/onboarding/hufs' }: { 
                       <p className="text-success">Paid by NEFT/RTGS · UTR {q.neft.utr}</p>
                     ) : (
                       <>
-                        {q.neft ? <p className="text-danger">NSE refused UTR {q.neft.utr}{q.neft.remark ? `: ${q.neft.remark}` : ''}</p> : null}
+                        {q.neft ? (
+                          <p className={q.neft.status === 'SENDING' || q.neft.status === 'NO_ANSWER' ? 'text-warn' : 'text-danger'}>
+                            {q.neft.status === 'SENDING' ? `Sending UTR ${q.neft.utr} to NSE` : q.neft.status === 'NO_ANSWER' ? `No answer from NSE for UTR ${q.neft.utr}` : `NSE refused UTR ${q.neft.utr}`}
+                            {q.neft.remark ? `: ${q.neft.remark}` : ''}
+                          </p>
+                        ) : null}
                         <NeftPayment hufId={hufId} requestId={q.id} />
                       </>
                     )
